@@ -3,38 +3,70 @@
 *To Kart, or Not to Kart*, rebuilt for PC in [Godot 4](https://godotengine.org).
 
 A kart racer that teaches *Hamlet* without trying: right answers are turbo.
-Sixteen tracks across the five Acts, 1–4 players in split screen, and 160
+Sixteen scenes across the five Acts, eight racers as 3D clay figures, and 160
 review questions written for grades 9–12 who read the play in a modern
-translation. This is a remaster of the Nintendo 64 homebrew edition, with the
-same content, the same rules and a modern look.
+translation. A remaster of the Nintendo 64 homebrew edition: the same
+content and rules, rebuilt for PCs and browsers.
 
-**Play the demo in your browser:**
-https://themisterdragon.github.io/hamlet-kart-remaster/ (keyboard or gamepad),
-or download it for Windows, Mac or Linux from
-[Releases](https://github.com/themisterdragon/hamlet-kart-remaster/releases).
+## Play
 
-**Status: early demo (0.1).** Races on all 16 tracks against 7 CPUs, with
-question boxes, quiz-as-turbo, drifting and a results screen. Not in yet:
-items, menus, character select, split screen, sound. See
+**In your browser (no download, Chromebooks too):**
+https://themisterdragon.github.io/hamlet-kart-remaster/
+
+**Download for Windows, Mac or Linux:**
+[Demo 0.2](https://github.com/themisterdragon/hamlet-kart-remaster/releases/tag/v0.2-demo)
+
+### Class races
+Up to 8 students race each other from their own browsers. The teacher (or a
+student) chooses **Host a Class Race** and gets a 5-character code; everyone
+else chooses **Join a Class Race** and types it in. Computer racers fill any
+empty karts. No accounts and no names: the code is the only thing that
+travels, through the free [PeerJS](https://peerjs.com) matchmaking service.
+Class races are in the browser version; the downloads are for solo play.
+
+### What's in demo 0.2
+- All 16 scenes, all 8 racers, all 160 questions, all 7 items
+- Question boxes: a right answer is a boost and an item, three in a row a
+  long boost; a missed question comes back at your next box
+- Drifting with mini-turbos, slipstream, rocket starts, boost pads, ramps
+  and moving scenery
+- The N64 edition's orchestral score, sound effects and character voices
+- Speed classes, results screen, and a tour of every scene
+
+Coming next: real 3D scenery and landmarks, split screen. See
 [docs/PLAN.md](docs/PLAN.md).
 
-Controls: left stick or arrow keys steer, A or X gas, B or Z brake, R1 or
-Shift drift (hold, lean, let go for a mini-turbo), D-pad or arrow keys
-answer while a question is up, Start or Esc pauses.
+### Controls
+| | Gamepad (Xbox / PlayStation) | Keyboard |
+|---|---|---|
+| Steer | left stick | arrows or A/D |
+| Gas | A / Cross, or RT / R2 | X |
+| Brake | B / Circle, or X / Square | Z |
+| Drift (hold, lean, let go for a mini-turbo) | RB / R1 | Shift |
+| Item (hold the skull; stick back rolls it behind) | LB / L1, or LT / L2 | Space |
+| Answer a question | D-pad | arrow keys |
+| Pause | Start / Options | Esc |
 
 ## Run it
 
-1. Install Godot 4.5 or newer (the standard build, not .NET).
+1. Install Godot 4.7 or newer (the standard build, not .NET).
 2. Open `project.godot` in the editor and press Play (F5).
 
 Builds: Project > Export in the editor (presets for Windows, Mac, Linux and
-web are included), after installing Godot's export templates.
+web are included), after installing Godot's export templates. For the web
+build use `tools/build_web.sh`, which also adds the class-race bridge
+(`web/net.js`).
 
 ## Where things come from
 
-`tools/import_content.py` reads the N64 edition's `tools/content.py` and writes
-`data/content.json`, then copies its fonts and images into `assets/`. Edit the
-questions in the N64 edition and re-import, so both editions stay the same.
+`tools/import_content.py` reads the N64 edition's `tools/content.py` and
+track builder and writes `data/content.json` and `data/tracks.json`, then
+copies its fonts, images, music and sounds into `assets/`. Edit the questions
+in the N64 edition and re-import, so both editions stay the same.
+
+`tools/make_models.py` turns the N64 edition's sculpted characters
+(`tools/characters.py` there) into the 3D models in `assets/models/`, with
+`tools/sdfmesh` (C, needs gcc with OpenMP).
 
 ## Privacy check
 
