@@ -1,0 +1,30 @@
+; Engine configuration file.
+; Godot 4 project: open this folder in the Godot editor.
+
+config_version=5
+
+[application]
+
+config/name="Hamlet Kart Remaster"
+config/description="A kart racer that teaches Hamlet: right answers are turbo."
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.5", "GL Compatibility")
+config/icon="res://assets/images/emblem.png"
+
+[autoload]
+
+Content="*res://scripts/content.gd"
+
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/size/window_width_override=1280
+window/size/window_height_override=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"

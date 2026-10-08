@@ -1,0 +1,1899 @@
+{
+ "acts": [
+  {
+   "name": "Act I",
+   "subtitle": "Something Is Rotten",
+   "recap": [
+    "A ghost says Claudius murdered King Hamlet.",
+    "Hamlet swears revenge and plans to act crazy.",
+    "Polonius bans Ophelia from seeing Hamlet."
+   ]
+  },
+  {
+   "name": "Act II",
+   "subtitle": "The Play's the Thing",
+   "recap": [
+    "Everyone spies on Hamlet to learn why he's 'mad.'",
+    "Polonius blames love. R&G are hired snoops.",
+    "Hamlet plans a play to test Claudius's guilt."
+   ]
+  },
+  {
+   "name": "Act III",
+   "subtitle": "The Mousetrap Snaps",
+   "recap": [
+    "Claudius panics at the play: he's guilty.",
+    "Hamlet skips killing him while he prays.",
+    "Hamlet stabs Polonius through the curtain."
+   ]
+  },
+  {
+   "name": "Act IV",
+   "subtitle": "Rosemary & Rue",
+   "recap": [
+    "Hamlet is shipped to England to be killed.",
+    "Ophelia goes mad and drowns. Laertes wants revenge.",
+    "Pirates bring Hamlet home. A duel is rigged."
+   ]
+  },
+  {
+   "name": "Act V",
+   "subtitle": "The Rest Is Silence",
+   "recap": [
+    "Alas, poor Yorick. Ophelia is buried.",
+    "Poisoned blade, poisoned cup: nearly all die.",
+    "Fortinbras walks in and takes the throne."
+   ]
+  }
+ ],
+ "tracks": [
+  {
+   "act": 0,
+   "scenes": "Scene 1",
+   "name": "The Battlements",
+   "summary": [
+    "Midnight. Freezing. The guards see a ghost",
+    "that looks just like the dead king."
+   ],
+   "beats": [
+    "'Who's there?' Jumpy guards, freezing night.",
+    "Horatio says ghosts aren't real. Then: ghost.",
+    "It looks exactly like the dead King Hamlet!",
+    "Norway's Fortinbras wants his dad's land back.",
+    "The rooster crows. The ghost bolts.",
+    "Plan: tell young Hamlet. He'll get it to talk."
+   ],
+   "questions": [
+    {
+     "q": "Who do the guards bring to see the ghost?",
+     "answer": "Horatio",
+     "wrong": [
+      "Hamlet",
+      "Polonius",
+      "Laertes"
+     ]
+    },
+    {
+     "q": "Why do the guards want Horatio to speak to the ghost?",
+     "answer": "He's a scholar",
+     "wrong": [
+      "He's a priest",
+      "He's the prince",
+      "He's in charge"
+     ]
+    },
+    {
+     "q": "Whom does the ghost look exactly like?",
+     "answer": "The dead king",
+     "wrong": [
+      "Claudius",
+      "Polonius",
+      "Young Hamlet"
+     ]
+    },
+    {
+     "q": "Why is Denmark getting ready for war?",
+     "answer": "Fortinbras",
+     "wrong": [
+      "England invaded",
+      "Pirates attacked",
+      "Claudius is bored"
+     ]
+    },
+    {
+     "q": "What does young Fortinbras want from Denmark?",
+     "answer": "Land Dad lost",
+     "wrong": [
+      "Ophelia's hand",
+      "Denmark's crown",
+      "Gold for Norway"
+     ]
+    },
+    {
+     "q": "What makes the ghost vanish before it can speak?",
+     "answer": "A rooster crows",
+     "wrong": [
+      "Horatio's sword",
+      "Church bells",
+      "A prayer"
+     ]
+    },
+    {
+     "q": "Horatio fears the ghost is a sign of what?",
+     "answer": "Trouble ahead",
+     "wrong": [
+      "A good harvest",
+      "A royal wedding",
+      "Bad weather"
+     ]
+    },
+    {
+     "q": "Why do they decide to tell young Hamlet about the ghost?",
+     "answer": "It may speak",
+     "wrong": [
+      "He's the king",
+      "He hunts ghosts",
+      "He gives orders"
+     ]
+    },
+    {
+     "q": "What mood does the play's opening scene set?",
+     "answer": "Tense, uneasy",
+     "wrong": [
+      "Calm and happy",
+      "Romantic",
+      "Silly"
+     ]
+    },
+    {
+     "q": "What do Fortinbras and young Hamlet have in common?",
+     "answer": "Both lost fathers",
+     "wrong": [
+      "Both are kings",
+      "Both are poets",
+      "Both study"
+     ]
+    }
+   ]
+  },
+  {
+   "act": 0,
+   "scenes": "Scene 2",
+   "name": "Claudius's Court",
+   "summary": [
+    "Claudius is king AND wed Hamlet's mom,",
+    "about a month after the funeral. Awkward."
+   ],
+   "beats": [
+    "King Claudius: 'Sad funeral! Happy wedding!'",
+    "Messengers go to Norway to stop Fortinbras.",
+    "Laertes may go back to France. Fun for him.",
+    "Hamlet, in black, may NOT go back to school.",
+    "Hamlet alone: Mom remarried in a month?!",
+    "Horatio: 'So... we saw your dead dad.'"
+   ],
+   "questions": [
+    {
+     "q": "Who has married Hamlet's mother?",
+     "answer": "Claudius",
+     "wrong": [
+      "Polonius",
+      "Horatio",
+      "Fortinbras"
+     ]
+    },
+    {
+     "q": "How soon after the funeral did Gertrude remarry?",
+     "answer": "Within a month",
+     "wrong": [
+      "After a year",
+      "After five years",
+      "Before he died"
+     ]
+    },
+    {
+     "q": "Why is Hamlet still dressed in black at court?",
+     "answer": "He's mourning",
+     "wrong": [
+      "It's in fashion",
+      "He's a priest",
+      "To hide at night"
+     ]
+    },
+    {
+     "q": "What does Claudius say about Hamlet's long grief?",
+     "answer": "It's unmanly",
+     "wrong": [
+      "It's noble",
+      "It's too short",
+      "It's fashionable"
+     ]
+    },
+    {
+     "q": "Why won't Claudius let Hamlet go back to school?",
+     "answer": "To keep him near",
+     "wrong": [
+      "Hamlet failed",
+      "War with Norway",
+      "School is closed"
+     ]
+    },
+    {
+     "q": "Alone, what does Hamlet wish in his first soliloquy?",
+     "answer": "That he could die",
+     "wrong": [
+      "To be king",
+      "To wed Ophelia",
+      "To see France"
+     ]
+    },
+    {
+     "q": "In his first soliloquy, what upsets Hamlet most?",
+     "answer": "Mom remarried",
+     "wrong": [
+      "Losing the crown",
+      "Ophelia",
+      "His exams"
+     ]
+    },
+    {
+     "q": "'Frailty, thy name is woman.' Who is Hamlet blaming?",
+     "answer": "His mother",
+     "wrong": [
+      "Ophelia",
+      "The ghost",
+      "Horatio"
+     ]
+    },
+    {
+     "q": "What does Hamlet decide after Horatio tells him about the ghost?",
+     "answer": "To watch for it",
+     "wrong": [
+      "To tell Claudius",
+      "To leave",
+      "To ignore it"
+     ]
+    },
+    {
+     "q": "'A little more than kin, and less than kind.' Who said it?",
+     "answer": "Hamlet",
+     "wrong": [
+      "Claudius",
+      "Laertes",
+      "Horatio"
+     ]
+    }
+   ]
+  },
+  {
+   "act": 0,
+   "scenes": "Scene 3",
+   "name": "Polonius's Advice",
+   "summary": [
+    "Laertes and Polonius both tell Ophelia",
+    "to stay away from Hamlet. Rude."
+   ],
+   "beats": [
+    "Laertes packs for France. One last lecture.",
+    "'Hamlet's a prince. He can't pick who he marries.'",
+    "Polonius arrives with a LOT of advice.",
+    "'Don't borrow or lend money.'",
+    "'To your own self be true.'",
+    "Polonius to Ophelia: stop seeing Hamlet."
+   ],
+   "questions": [
+    {
+     "q": "Why does Laertes say Hamlet can't freely choose a wife?",
+     "answer": "He's a prince",
+     "wrong": [
+      "He's too young",
+      "He's engaged",
+      "He's a student"
+     ]
+    },
+    {
+     "q": "What does Laertes warn Ophelia to protect?",
+     "answer": "Her good name",
+     "wrong": [
+      "Her jewels",
+      "The castle",
+      "Her diary"
+     ]
+    },
+    {
+     "q": "How does Ophelia answer her brother's lecture?",
+     "answer": "Take your advice",
+     "wrong": [
+      "Stay in Denmark",
+      "Write to me daily",
+      "Spy on Hamlet"
+     ]
+    },
+    {
+     "q": "What kind of advice does Polonius give Laertes?",
+     "answer": "How to behave",
+     "wrong": [
+      "How to fence",
+      "How to woo",
+      "How to rule"
+     ]
+    },
+    {
+     "q": "Polonius tells Laertes: 'To thine own self be...'",
+     "answer": "True",
+     "wrong": [
+      "Kind",
+      "Loyal",
+      "Rich"
+     ]
+    },
+    {
+     "q": "What does Polonius order Ophelia to do about Hamlet?",
+     "answer": "Stop seeing him",
+     "wrong": [
+      "Marry him",
+      "Spy on him",
+      "Write to him"
+     ]
+    },
+    {
+     "q": "Why does Polonius distrust Hamlet's vows of love?",
+     "answer": "He sees a trap",
+     "wrong": [
+      "Hamlet is poor",
+      "Hamlet's married",
+      "Hamlet is mad"
+     ]
+    },
+    {
+     "q": "How does Ophelia answer her father's order?",
+     "answer": "She obeys",
+     "wrong": [
+      "She refuses",
+      "She runs off",
+      "She tells Hamlet"
+     ]
+    },
+    {
+     "q": "What does Act I, Scene 3 show about Ophelia's life?",
+     "answer": "Men rule her",
+     "wrong": [
+      "She's in charge",
+      "She's free",
+      "She's a spy"
+     ]
+    },
+    {
+     "q": "Where is Laertes about to travel?",
+     "answer": "France",
+     "wrong": [
+      "Wittenberg",
+      "England",
+      "Norway"
+     ]
+    }
+   ]
+  },
+  {
+   "act": 0,
+   "scenes": "Scenes 4-5",
+   "name": "The Ghost Speaks",
+   "summary": [
+    "The ghost tells Hamlet the truth:",
+    "Claudius murdered him. Revenge time."
+   ],
+   "beats": [
+    "Hamlet waits on the walls. Claudius parties.",
+    "The ghost waves Hamlet over. Friends: don't!",
+    "'Something is rotten in the state of Denmark.'",
+    "Ghost: Claudius poured poison in my ear!",
+    "'Remember me!' Hamlet swears revenge.",
+    "Hamlet: 'I might act crazy. Play along.'"
+   ],
+   "questions": [
+    {
+     "q": "'Something is rotten in the state of Denmark.' Who said it?",
+     "answer": "Marcellus",
+     "wrong": [
+      "Hamlet",
+      "Horatio",
+      "The ghost"
+     ]
+    },
+    {
+     "q": "Why do Hamlet's friends try to stop him following the ghost?",
+     "answer": "It may harm him",
+     "wrong": [
+      "It's forbidden",
+      "It's almost dawn",
+      "He's unarmed"
+     ]
+    },
+    {
+     "q": "How did Claudius kill King Hamlet?",
+     "answer": "Poison in his ear",
+     "wrong": [
+      "In a sword fight",
+      "Poisoned wine",
+      "Down the stairs"
+     ]
+    },
+    {
+     "q": "What story was told about the old king's death?",
+     "answer": "A snake bit him",
+     "wrong": [
+      "He fell ill",
+      "He died in battle",
+      "He drowned"
+     ]
+    },
+    {
+     "q": "What does the ghost ask Hamlet to do?",
+     "answer": "Avenge him",
+     "wrong": [
+      "Forgive Claudius",
+      "Leave Denmark",
+      "Become a priest"
+     ]
+    },
+    {
+     "q": "Besides murder, what does the ghost blame Claudius for?",
+     "answer": "Taking his wife",
+     "wrong": [
+      "Stealing gold",
+      "Selling Denmark",
+      "Losing a war"
+     ]
+    },
+    {
+     "q": "What does the ghost tell Hamlet to do about Gertrude?",
+     "answer": "Leave her to God",
+     "wrong": [
+      "Kill her too",
+      "Banish her",
+      "Tell the court"
+     ]
+    },
+    {
+     "q": "What does Hamlet make his friends swear to do?",
+     "answer": "Keep it secret",
+     "wrong": [
+      "Kill Claudius",
+      "Guard Gertrude",
+      "Leave Denmark"
+     ]
+    },
+    {
+     "q": "What does Hamlet warn he might pretend to be?",
+     "answer": "Mad",
+     "wrong": [
+      "Sick",
+      "Dead",
+      "A ghost"
+     ]
+    },
+    {
+     "q": "'The time is out of joint.' What does Hamlet mean?",
+     "answer": "All is wrong",
+     "wrong": [
+      "He's running late",
+      "He hurt his arm",
+      "The clock broke"
+     ]
+    }
+   ]
+  },
+  {
+   "act": 1,
+   "scenes": "Scene 1",
+   "name": "Reynaldo the Spy",
+   "summary": [
+    "Polonius sends a spy after his own son,",
+    "then decides Hamlet is crazy in love."
+   ],
+   "beats": [
+    "Polonius hires Reynaldo to spy on Laertes.",
+    "Plan: spread small rumors, see what's true.",
+    "Ophelia runs in, scared.",
+    "Hamlet came in a mess, stared, and left!",
+    "Polonius: 'He's mad with love for you!'",
+    "Off to tell the king. Bad idea, Polonius."
+   ],
+   "questions": [
+    {
+     "q": "Why does Polonius send his servant Reynaldo to Paris?",
+     "answer": "Spy on Laertes",
+     "wrong": [
+      "To fetch Laertes",
+      "To hire actors",
+      "To buy a horse"
+     ]
+    },
+    {
+     "q": "How should Reynaldo find out about Laertes?",
+     "answer": "Spread rumors",
+     "wrong": [
+      "Read his letters",
+      "Follow him",
+      "Bribe his tutor"
+     ]
+    },
+    {
+     "q": "What does the Reynaldo plan show about Polonius?",
+     "answer": "He loves spying",
+     "wrong": [
+      "He trusts his son",
+      "He's generous",
+      "He's lazy"
+     ]
+    },
+    {
+     "q": "Why is Ophelia frightened at the start of Act II?",
+     "answer": "Hamlet's visit",
+     "wrong": [
+      "She saw a ghost",
+      "Laertes left",
+      "Her father yelled"
+     ]
+    },
+    {
+     "q": "How does Hamlet look when he visits Ophelia?",
+     "answer": "Pale and messy",
+     "wrong": [
+      "Well dressed",
+      "In full armor",
+      "Covered in flour"
+     ]
+    },
+    {
+     "q": "What does Hamlet do in Ophelia's room?",
+     "answer": "Stares and sighs",
+     "wrong": [
+      "Proposes",
+      "Shouts at her",
+      "Reads a poem"
+     ]
+    },
+    {
+     "q": "What does Polonius think made Hamlet mad?",
+     "answer": "Love for Ophelia",
+     "wrong": [
+      "His dad's death",
+      "Too much study",
+      "The ghost"
+     ]
+    },
+    {
+     "q": "Why does Polonius regret his order to Ophelia?",
+     "answer": "It drove him mad",
+     "wrong": [
+      "Hamlet left",
+      "Ophelia cried",
+      "The king is angry"
+     ]
+    },
+    {
+     "q": "After hearing Ophelia's story, what does Polonius do?",
+     "answer": "Tells the king",
+     "wrong": [
+      "Tells Laertes",
+      "Locks her up",
+      "Asks the ghost"
+     ]
+    },
+    {
+     "q": "Hamlet's strange visit to Ophelia may be part of what?",
+     "answer": "Acting mad",
+     "wrong": [
+      "A proposal",
+      "A plot to kill",
+      "A play rehearsal"
+     ]
+    }
+   ]
+  },
+  {
+   "act": 1,
+   "scenes": "Scene 2",
+   "name": "The Players Arrive",
+   "summary": [
+    "Spies everywhere. Then actors arrive,",
+    "and Hamlet gets an idea."
+   ],
+   "beats": [
+    "The king hires Hamlet's pals R&G to spy.",
+    "Polonius: 'Brevity is the soul of wit.' (He isn't brief.)",
+    "Hamlet calls Polonius a fish seller. Burn.",
+    "R&G admit they were sent for. Busted.",
+    "The actors arrive! An actor cries over a story.",
+    "'The play's the thing to catch the king.'"
+   ],
+   "questions": [
+    {
+     "q": "Why did the king send for Rosencrantz and Guildenstern?",
+     "answer": "To spy on Hamlet",
+     "wrong": [
+      "To fight Norway",
+      "To teach Hamlet",
+      "To act in a play"
+     ]
+    },
+    {
+     "q": "What news comes back from Norway?",
+     "answer": "No war after all",
+     "wrong": [
+      "War is coming",
+      "Their king died",
+      "Pirates attacked"
+     ]
+    },
+    {
+     "q": "Why is it funny that Polonius says 'Brevity is the soul of wit'?",
+     "answer": "He rambles",
+     "wrong": [
+      "He's a jester",
+      "He's whispering",
+      "He's brief"
+     ]
+    },
+    {
+     "q": "How does Polonius plan to test his love theory?",
+     "answer": "Spy on a meeting",
+     "wrong": [
+      "Read his diary",
+      "Ask Gertrude",
+      "Hire actors"
+     ]
+    },
+    {
+     "q": "What does Hamlet get Rosencrantz and Guildenstern to admit?",
+     "answer": "They're spies",
+     "wrong": [
+      "They're in love",
+      "They saw a ghost",
+      "They're actors"
+     ]
+    },
+    {
+     "q": "An actor weeps over an old story. How does it make Hamlet feel?",
+     "answer": "Ashamed",
+     "wrong": [
+      "Bored",
+      "Cheerful",
+      "Jealous"
+     ]
+    },
+    {
+     "q": "Why does Hamlet want the actors to put on a play?",
+     "answer": "To test Claudius",
+     "wrong": [
+      "To cheer up Mom",
+      "To win Ophelia",
+      "For money"
+     ]
+    },
+    {
+     "q": "Why won't Hamlet just trust what the ghost said?",
+     "answer": "It may be a devil",
+     "wrong": [
+      "It lies a lot",
+      "It mumbled",
+      "Horatio doubts it"
+     ]
+    },
+    {
+     "q": "'The play's the thing wherein I'll catch the conscience of the...'",
+     "answer": "King",
+     "wrong": [
+      "Queen",
+      "Ghost",
+      "Crowd"
+     ]
+    },
+    {
+     "q": "'Though this be madness, yet there is method in't.' Who said it?",
+     "answer": "Polonius",
+     "wrong": [
+      "Claudius",
+      "Gertrude",
+      "Guildenstern"
+     ]
+    }
+   ]
+  },
+  {
+   "act": 2,
+   "scenes": "Scene 1",
+   "name": "To Be or Not to Be",
+   "summary": [
+    "Hamlet wonders whether to live or die.",
+    "Ophelia gets an earful. Spies take notes."
+   ],
+   "beats": [
+    "R&G report: no clue why Hamlet's acting weird.",
+    "The king and Polonius hide to spy. Again.",
+    "'To be, or not to be: that is the question.'",
+    "Fear of what's after death keeps us going.",
+    "Ophelia returns his gifts: 'Get thee to a nunnery!'",
+    "King: not love. Ship Hamlet off to England."
+   ],
+   "questions": [
+    {
+     "q": "What question is 'To be or not to be' asking?",
+     "answer": "Is life worth it?",
+     "wrong": [
+      "Should I be king?",
+      "Is it a ghost?",
+      "Should I marry?"
+     ]
+    },
+    {
+     "q": "In 'To be or not to be,' what makes death so frightening?",
+     "answer": "The unknown",
+     "wrong": [
+      "The pain",
+      "Ghosts",
+      "Old age"
+     ]
+    },
+    {
+     "q": "'Conscience does make ___ of us all.'",
+     "answer": "Cowards",
+     "wrong": [
+      "Heroes",
+      "Kings",
+      "Fools"
+     ]
+    },
+    {
+     "q": "Who hides with Polonius to watch Hamlet meet Ophelia?",
+     "answer": "Claudius",
+     "wrong": [
+      "Gertrude",
+      "Horatio",
+      "Laertes"
+     ]
+    },
+    {
+     "q": "Why is Ophelia sent to meet Hamlet?",
+     "answer": "So they can spy",
+     "wrong": [
+      "To return a ring",
+      "To end the feud",
+      "To cheer him up"
+     ]
+    },
+    {
+     "q": "What does Ophelia try to give back to Hamlet?",
+     "answer": "His gifts",
+     "wrong": [
+      "His sword",
+      "Her father's ring",
+      "A library book"
+     ]
+    },
+    {
+     "q": "'Get thee to a nunnery.' What is Hamlet telling Ophelia?",
+     "answer": "Never marry",
+     "wrong": [
+      "Go and pray",
+      "Become a nurse",
+      "Leave Denmark"
+     ]
+    },
+    {
+     "q": "Why does Claudius doubt that Hamlet is mad with love?",
+     "answer": "He's dangerous",
+     "wrong": [
+      "He hates her",
+      "Gertrude says so",
+      "Hamlet's married"
+     ]
+    },
+    {
+     "q": "After spying on Hamlet, what does Claudius decide?",
+     "answer": "Ship him away",
+     "wrong": [
+      "Let him marry",
+      "Make him heir",
+      "Lock him up"
+     ]
+    },
+    {
+     "q": "'O, what a noble mind is here o'erthrown!' Who said it?",
+     "answer": "Ophelia",
+     "wrong": [
+      "Gertrude",
+      "Polonius",
+      "Claudius"
+     ]
+    }
+   ]
+  },
+  {
+   "act": 2,
+   "scenes": "Scene 2",
+   "name": "The Mousetrap",
+   "summary": [
+    "The play shows a murder just like",
+    "the real one. The king freaks out."
+   ],
+   "beats": [
+    "Hamlet coaches the actors: don't overact!",
+    "Horatio's job: watch the king's face.",
+    "Hamlet names the play 'The Mousetrap.'",
+    "'The lady doth protest too much, methinks.'",
+    "Poison in the ear! The king storms out!",
+    "Hamlet: 'I'll take the ghost's word now.'"
+   ],
+   "questions": [
+    {
+     "q": "What is Hamlet's main advice to the actors?",
+     "answer": "Don't overact",
+     "wrong": [
+      "Speak loudly",
+      "Make it up",
+      "Wear masks"
+     ]
+    },
+    {
+     "q": "Why does Hamlet trust Horatio above everyone?",
+     "answer": "He's steady",
+     "wrong": [
+      "He's rich",
+      "He's family",
+      "He's royal"
+     ]
+    },
+    {
+     "q": "Whom does Hamlet ask to watch the king's face?",
+     "answer": "Horatio",
+     "wrong": [
+      "Ophelia",
+      "Polonius",
+      "Gertrude"
+     ]
+    },
+    {
+     "q": "Why does Hamlet call the play 'The Mousetrap'?",
+     "answer": "To catch the king",
+     "wrong": [
+      "It's about mice",
+      "Polonius chose it",
+      "It's a comedy"
+     ]
+    },
+    {
+     "q": "In the play, how is the sleeping king killed?",
+     "answer": "Poison in the ear",
+     "wrong": [
+      "With a dagger",
+      "With a pillow",
+      "He's drowned"
+     ]
+    },
+    {
+     "q": "'The lady doth protest too much.' What does Gertrude mean?",
+     "answer": "She overdoes it",
+     "wrong": [
+      "She's too loud",
+      "She acts badly",
+      "She's too quiet"
+     ]
+    },
+    {
+     "q": "What does Claudius do when the poisoning is acted out?",
+     "answer": "Stops the play",
+     "wrong": [
+      "Applauds",
+      "Confesses",
+      "Falls asleep"
+     ]
+    },
+    {
+     "q": "To Hamlet, what does the king's reaction prove?",
+     "answer": "The ghost's right",
+     "wrong": [
+      "The ghost lied",
+      "Mom is guilty",
+      "The play is bad"
+     ]
+    },
+    {
+     "q": "Hamlet hands Guildenstern a pipe to play. What is his point?",
+     "answer": "I can't be played",
+     "wrong": [
+      "Music calms him",
+      "Learn an art",
+      "He's out of tune"
+     ]
+    },
+    {
+     "q": "'I will speak daggers to her, but use none.' What does Hamlet mean?",
+     "answer": "Only harsh words",
+     "wrong": [
+      "He'll stab her",
+      "He'll stay silent",
+      "He'll forgive her"
+     ]
+    }
+   ]
+  },
+  {
+   "act": 2,
+   "scenes": "Scene 3",
+   "name": "Claudius Prays",
+   "summary": [
+    "Claudius admits his crime, alone.",
+    "Hamlet could strike... and doesn't."
+   ],
+   "beats": [
+    "Claudius: R&G, take Hamlet to England. Now.",
+    "Polonius will hide in the queen's room.",
+    "Claudius alone: 'My offense is rank!'",
+    "He can't be sorry. He'd have to give it all back.",
+    "Hamlet finds him praying. Sword up...",
+    "Not now: he'd go to heaven. Hamlet waits."
+   ],
+   "questions": [
+    {
+     "q": "Alone at prayer, what does Claudius admit?",
+     "answer": "Murder",
+     "wrong": [
+      "Fearing Hamlet",
+      "Hating Gertrude",
+      "Being ill"
+     ]
+    },
+    {
+     "q": "Why can't Claudius be forgiven, in his own words?",
+     "answer": "He won't give up",
+     "wrong": [
+      "He forgot how",
+      "He's interrupted",
+      "No priest came"
+     ]
+    },
+    {
+     "q": "Why won't Hamlet kill Claudius at prayer? His soul would...",
+     "answer": "Go to heaven",
+     "wrong": [
+      "Go to hell",
+      "Haunt him",
+      "Be forgotten"
+     ]
+    },
+    {
+     "q": "Hamlet spares the praying king. What's the irony?",
+     "answer": "The prayer failed",
+     "wrong": [
+      "He was asleep",
+      "He was armed",
+      "It was Polonius"
+     ]
+    },
+    {
+     "q": "'My words fly up, my thoughts remain below.' What does Claudius mean?",
+     "answer": "He's not sorry",
+     "wrong": [
+      "God heard him",
+      "He fears heights",
+      "He forgot words"
+     ]
+    },
+    {
+     "q": "Why does Claudius want Hamlet out of Denmark?",
+     "answer": "He fears him",
+     "wrong": [
+      "He's ill",
+      "For England",
+      "Gertrude asked"
+     ]
+    },
+    {
+     "q": "Who will take Hamlet to England?",
+     "answer": "Two old friends",
+     "wrong": [
+      "Horatio",
+      "Polonius",
+      "Laertes"
+     ]
+    },
+    {
+     "q": "Where does Polonius plan to hide and listen?",
+     "answer": "Behind a curtain",
+     "wrong": [
+      "Under the bed",
+      "In the chapel",
+      "In a chest"
+     ]
+    },
+    {
+     "q": "Which habit of Hamlet's does the prayer scene show?",
+     "answer": "Delaying",
+     "wrong": [
+      "Rushing in",
+      "Greed",
+      "Lying"
+     ]
+    },
+    {
+     "q": "'O, my offence is rank, it smells to heaven.' Who said it?",
+     "answer": "Claudius",
+     "wrong": [
+      "Hamlet",
+      "Polonius",
+      "Gertrude"
+     ]
+    }
+   ]
+  },
+  {
+   "act": 2,
+   "scenes": "Scene 4",
+   "name": "The Closet",
+   "summary": [
+    "Hamlet confronts his mother.",
+    "Someone behind the curtain: big mistake."
+   ],
+   "beats": [
+    "Polonius hides behind the arras (curtain).",
+    "Hamlet is rough on Gertrude. She yells help!",
+    "'How now, a rat?' Stab through the curtain!",
+    "Oops. It was Polonius, not the king.",
+    "The ghost returns. Only Hamlet sees it.",
+    "Hamlet drags the body off. Grim exit."
+   ],
+   "questions": [
+    {
+     "q": "Who hides behind the tapestry in Gertrude's room?",
+     "answer": "Polonius",
+     "wrong": [
+      "Claudius",
+      "Rosencrantz",
+      "The ghost"
+     ]
+    },
+    {
+     "q": "How does Polonius give himself away?",
+     "answer": "He calls for help",
+     "wrong": [
+      "He sneezes",
+      "He drops a book",
+      "The ghost points"
+     ]
+    },
+    {
+     "q": "Whom does Hamlet hope he has stabbed?",
+     "answer": "Claudius",
+     "wrong": [
+      "Polonius",
+      "Rosencrantz",
+      "Laertes"
+     ]
+    },
+    {
+     "q": "Hamlet shows Gertrude two pictures. Of whom?",
+     "answer": "Her husbands",
+     "wrong": [
+      "Norway's kings",
+      "Her sons",
+      "Her parents"
+     ]
+    },
+    {
+     "q": "What does Hamlet beg Gertrude to do?",
+     "answer": "Avoid Claudius",
+     "wrong": [
+      "Leave Denmark",
+      "Kill Claudius",
+      "Tell the court"
+     ]
+    },
+    {
+     "q": "Why does the ghost come back in Gertrude's room?",
+     "answer": "Hamlet delays",
+     "wrong": [
+      "To see the queen",
+      "To warn Laertes",
+      "To scare him"
+     ]
+    },
+    {
+     "q": "Why does Gertrude think Hamlet is mad?",
+     "answer": "He talks to air",
+     "wrong": [
+      "He killed a rat",
+      "He's in black",
+      "He's singing"
+     ]
+    },
+    {
+     "q": "What does Hamlet tell Gertrude about his madness?",
+     "answer": "He's faking it",
+     "wrong": [
+      "It's real",
+      "Ophelia caused it",
+      "The king did it"
+     ]
+    },
+    {
+     "q": "Hamlet kills Polonius in a flash. Whom has he put off killing?",
+     "answer": "Claudius",
+     "wrong": [
+      "Laertes",
+      "Rosencrantz",
+      "Osric"
+     ]
+    },
+    {
+     "q": "What does Hamlet do with Polonius's body?",
+     "answer": "Drags it away",
+     "wrong": [
+      "Buries it",
+      "Hides it",
+      "Sends it home"
+     ]
+    }
+   ]
+  },
+  {
+   "act": 3,
+   "scenes": "Scenes 1-3",
+   "name": "Where's Polonius?",
+   "summary": [
+    "Hamlet hid the body and won't say where.",
+    "The king's secret plan: England = death."
+   ],
+   "beats": [
+    "Gertrude tells the king: Hamlet killed Polonius!",
+    "R&G hunt for the body. Hamlet: 'You're a sponge.'",
+    "Hamlet runs off. Hide-and-seek, castle edition.",
+    "Where's Polonius? 'At supper.' (Worms' supper.)",
+    "Check the stairs to the lobby. Pee-yew.",
+    "Secret letter: England, please kill Hamlet."
+   ],
+   "questions": [
+    {
+     "q": "How does Gertrude describe Hamlet to Claudius?",
+     "answer": "Mad as the sea",
+     "wrong": [
+      "Calm and sorry",
+      "Sick with fever",
+      "In love"
+     ]
+    },
+    {
+     "q": "By calling Hamlet mad, what is Gertrude doing?",
+     "answer": "Keeping a secret",
+     "wrong": [
+      "Helping Claudius",
+      "Making a joke",
+      "Asking for help"
+     ]
+    },
+    {
+     "q": "What does Claudius realize when he hears Polonius is dead?",
+     "answer": "He could be next",
+     "wrong": [
+      "Hamlet is sane",
+      "Gertrude did it",
+      "Laertes is back"
+     ]
+    },
+    {
+     "q": "Why does Hamlet call Rosencrantz a sponge?",
+     "answer": "He absorbs favor",
+     "wrong": [
+      "He drinks a lot",
+      "He's always wet",
+      "He cleans up"
+     ]
+    },
+    {
+     "q": "How does Hamlet talk about Polonius's death?",
+     "answer": "With grim jokes",
+     "wrong": [
+      "With tears",
+      "With prayers",
+      "He won't speak"
+     ]
+    },
+    {
+     "q": "Hamlet says Polonius is 'at supper.' What does he mean?",
+     "answer": "Worms eat him",
+     "wrong": [
+      "He's at a feast",
+      "In the kitchen",
+      "He's hiding"
+     ]
+    },
+    {
+     "q": "'A king may go a progress through the guts of a beggar.' Hamlet's point?",
+     "answer": "Death levels all",
+     "wrong": [
+      "Kings eat well",
+      "Beggars rule",
+      "Kings travel far"
+     ]
+    },
+    {
+     "q": "Why can't Claudius punish Hamlet openly?",
+     "answer": "People love him",
+     "wrong": [
+      "He has no proof",
+      "He's too strong",
+      "It's illegal"
+     ]
+    },
+    {
+     "q": "What does the king's sealed letter ask England to do?",
+     "answer": "Kill Hamlet",
+     "wrong": [
+      "Crown Hamlet",
+      "Jail Rosencrantz",
+      "Declare war"
+     ]
+    },
+    {
+     "q": "'Not where he eats, but where he is eaten.' Who said it?",
+     "answer": "Hamlet",
+     "wrong": [
+      "Claudius",
+      "Rosencrantz",
+      "Gertrude"
+     ]
+    }
+   ]
+  },
+  {
+   "act": 3,
+   "scenes": "Scene 4",
+   "name": "Fortinbras's Army",
+   "summary": [
+    "Thousands march to fight for a worthless",
+    "patch of land. Hamlet feels lazy."
+   ],
+   "beats": [
+    "Fortinbras's army marches through Denmark.",
+    "Target: a tiny, worthless patch of Poland.",
+    "Hamlet: they'll die for THAT?",
+    "Meanwhile, I have a real reason, and wait.",
+    "'My thoughts be bloody, or be nothing worth!'",
+    "Off to England anyway. Plot twist incoming."
+   ],
+   "questions": [
+    {
+     "q": "Where is Fortinbras's army marching?",
+     "answer": "Poland",
+     "wrong": [
+      "Denmark",
+      "England",
+      "France"
+     ]
+    },
+    {
+     "q": "What will Fortinbras's army fight over?",
+     "answer": "Worthless land",
+     "wrong": [
+      "Gold mines",
+      "A princess",
+      "A holy relic"
+     ]
+    },
+    {
+     "q": "Who tells Hamlet the land is worthless?",
+     "answer": "A captain",
+     "wrong": [
+      "Fortinbras",
+      "Rosencrantz",
+      "Horatio"
+     ]
+    },
+    {
+     "q": "How does the army make Hamlet feel?",
+     "answer": "Ashamed",
+     "wrong": [
+      "Afraid",
+      "Proud",
+      "Eager to enlist"
+     ]
+    },
+    {
+     "q": "Why does the army shame Hamlet?",
+     "answer": "They take action",
+     "wrong": [
+      "They're braver",
+      "They mock him",
+      "There are many"
+     ]
+    },
+    {
+     "q": "What troubles Hamlet about the soldiers?",
+     "answer": "Pointless deaths",
+     "wrong": [
+      "They're Danish",
+      "They're paid",
+      "They're lost"
+     ]
+    },
+    {
+     "q": "How is Fortinbras a foil to Hamlet?",
+     "answer": "He acts fast",
+     "wrong": [
+      "He's a ghost",
+      "He loves Ophelia",
+      "He's a poet"
+     ]
+    },
+    {
+     "q": "'From this time forth, my thoughts be ___ or be nothing worth!'",
+     "answer": "Bloody",
+     "wrong": [
+      "Peaceful",
+      "Honest",
+      "Silent"
+     ]
+    },
+    {
+     "q": "Whose death does Fortinbras want to make up for?",
+     "answer": "His father's",
+     "wrong": [
+      "His brother's",
+      "His king's",
+      "His wife's"
+     ]
+    },
+    {
+     "q": "Where is Hamlet headed when he meets the army?",
+     "answer": "To England",
+     "wrong": [
+      "To Poland",
+      "Home",
+      "To Wittenberg"
+     ]
+    }
+   ]
+  },
+  {
+   "act": 3,
+   "scenes": "Scene 5",
+   "name": "Ophelia's Madness",
+   "summary": [
+    "Ophelia loses her mind with grief.",
+    "Laertes storms in, wanting blood."
+   ],
+   "beats": [
+    "Ophelia sings strange, sad songs.",
+    "The king: 'Sorrows come in battalions.'",
+    "A mob! Laertes bursts in, wants revenge!",
+    "Claudius stays calm: 'I didn't do it.'",
+    "Rosemary for remembrance. Pansies for thoughts.",
+    "Laertes sees his sister. Revenge, doubled."
+   ],
+   "questions": [
+    {
+     "q": "What has driven Ophelia mad?",
+     "answer": "Her dad's death",
+     "wrong": [
+      "Hamlet's letters",
+      "The ghost",
+      "The play"
+     ]
+    },
+    {
+     "q": "How was Polonius buried?",
+     "answer": "In secret",
+     "wrong": [
+      "With full honors",
+      "At sea",
+      "In France"
+     ]
+    },
+    {
+     "q": "What does Ophelia hand out at court?",
+     "answer": "Flowers",
+     "wrong": [
+      "Letters",
+      "Coins",
+      "Daggers"
+     ]
+    },
+    {
+     "q": "Ophelia's flowers carry meanings. What is rosemary for?",
+     "answer": "Remembrance",
+     "wrong": [
+      "Love",
+      "Sorrow",
+      "Luck"
+     ]
+    },
+    {
+     "q": "What do Ophelia's songs keep returning to?",
+     "answer": "Death and love",
+     "wrong": [
+      "Pirates",
+      "Wars",
+      "Feasts"
+     ]
+    },
+    {
+     "q": "Who storms the castle with an angry crowd?",
+     "answer": "Laertes",
+     "wrong": [
+      "Fortinbras",
+      "Hamlet",
+      "Horatio"
+     ]
+    },
+    {
+     "q": "What does the angry crowd shout for?",
+     "answer": "Laertes as king",
+     "wrong": [
+      "Hamlet as king",
+      "Claudius's head",
+      "Free bread"
+     ]
+    },
+    {
+     "q": "Claudius says God protects kings. Why is that ironic?",
+     "answer": "He killed a king",
+     "wrong": [
+      "He's not a king",
+      "He's an atheist",
+      "He's a ghost"
+     ]
+    },
+    {
+     "q": "How is Laertes a foil to Hamlet?",
+     "answer": "He acts at once",
+     "wrong": [
+      "He's calm",
+      "He fakes it",
+      "He's a scholar"
+     ]
+    },
+    {
+     "q": "'When sorrows come, they come not single spies, but in battalions.' Who said it?",
+     "answer": "Claudius",
+     "wrong": [
+      "Gertrude",
+      "Laertes",
+      "Horatio"
+     ]
+    }
+   ]
+  },
+  {
+   "act": 3,
+   "scenes": "Scenes 6-7",
+   "name": "Pirates & the Brook",
+   "summary": [
+    "Pirates return Hamlet. The duel is rigged.",
+    "Then: sad news by the brook."
+   ],
+   "beats": [
+    "A letter! Pirates attacked Hamlet's ship!",
+    "Hamlet's back in Denmark. R&G sail on.",
+    "Claudius & Laertes plot a fake fencing match.",
+    "Sharp blade + poison tip + poisoned cup.",
+    "Gertrude: Ophelia fell from a willow...",
+    "...and drowned in the brook. Laertes weeps."
+   ],
+   "questions": [
+    {
+     "q": "How does Hamlet escape the ship to England?",
+     "answer": "Pirates take him",
+     "wrong": [
+      "He swims home",
+      "He bribes them",
+      "Horatio's rescue"
+     ]
+    },
+    {
+     "q": "Who gets Hamlet's letter about the pirates?",
+     "answer": "Horatio",
+     "wrong": [
+      "Claudius",
+      "Gertrude",
+      "Laertes"
+     ]
+    },
+    {
+     "q": "How do Claudius and Laertes plan to kill Hamlet?",
+     "answer": "A rigged duel",
+     "wrong": [
+      "An ambush",
+      "A fire",
+      "Exile"
+     ]
+    },
+    {
+     "q": "Why does Claudius want Hamlet's death to look like an accident?",
+     "answer": "To avoid blame",
+     "wrong": [
+      "To spare Laertes",
+      "To fool England",
+      "For a laugh"
+     ]
+    },
+    {
+     "q": "What will Laertes put on his sword?",
+     "answer": "Poison",
+     "wrong": [
+      "A blunt tip",
+      "Holy water",
+      "Gold paint"
+     ]
+    },
+    {
+     "q": "What is the backup plan if the sword fails?",
+     "answer": "A poisoned drink",
+     "wrong": [
+      "A second duel",
+      "Hired killers",
+      "A trapdoor"
+     ]
+    },
+    {
+     "q": "Laertes says he'd cut Hamlet's throat even where?",
+     "answer": "In a church",
+     "wrong": [
+      "In his bed",
+      "At sea",
+      "On the throne"
+     ]
+    },
+    {
+     "q": "Laertes would kill in a church. Whom did Hamlet spare at prayer?",
+     "answer": "Claudius",
+     "wrong": [
+      "Polonius",
+      "Laertes",
+      "Horatio"
+     ]
+    },
+    {
+     "q": "How does Ophelia die?",
+     "answer": "She drowns",
+     "wrong": [
+      "She's poisoned",
+      "She falls",
+      "In a duel"
+     ]
+    },
+    {
+     "q": "Who brings the news of Ophelia's death?",
+     "answer": "Gertrude",
+     "wrong": [
+      "Hamlet",
+      "Horatio",
+      "A gravedigger"
+     ]
+    }
+   ]
+  },
+  {
+   "act": 4,
+   "scenes": "Scene 1",
+   "name": "The Graveyard",
+   "summary": [
+    "Gravediggers crack jokes. Hamlet meets",
+    "an old friend's skull. Then, a funeral."
+   ],
+   "beats": [
+    "Two gravediggers joke while they dig.",
+    "Should she get a church burial? Rich folks do.",
+    "A skull! It's Yorick, the old court jester.",
+    "'Alas, poor Yorick! I knew him, Horatio.'",
+    "Ophelia's funeral. Laertes jumps in the grave!",
+    "Hamlet jumps in too. Brawl in the grave."
+   ],
+   "questions": [
+    {
+     "q": "What do the gravediggers argue about?",
+     "answer": "Her burial",
+     "wrong": [
+      "Who digs faster",
+      "Their pay",
+      "The weather"
+     ]
+    },
+    {
+     "q": "What do the joking gravediggers bring to this dark scene?",
+     "answer": "Comic relief",
+     "wrong": [
+      "A sword fight",
+      "A plot twist",
+      "A ghost"
+     ]
+    },
+    {
+     "q": "Who was Yorick?",
+     "answer": "The king's jester",
+     "wrong": [
+      "A gravedigger",
+      "Hamlet's tutor",
+      "A soldier"
+     ]
+    },
+    {
+     "q": "Holding Yorick's skull, what does Hamlet realize?",
+     "answer": "All of us die",
+     "wrong": [
+      "Yorick was killed",
+      "He must be king",
+      "Skulls are heavy"
+     ]
+    },
+    {
+     "q": "Hamlet says even Alexander the Great turned to...",
+     "answer": "Dust",
+     "wrong": [
+      "A ghost",
+      "A god",
+      "Gold"
+     ]
+    },
+    {
+     "q": "Why are Ophelia's funeral rites cut short?",
+     "answer": "It may be suicide",
+     "wrong": [
+      "It's raining",
+      "A fight",
+      "The priest is ill"
+     ]
+    },
+    {
+     "q": "What does Hamlet only learn at the graveyard?",
+     "answer": "Ophelia has died",
+     "wrong": [
+      "Polonius is dead",
+      "Laertes is home",
+      "Claudius lied"
+     ]
+    },
+    {
+     "q": "Who leaps into Ophelia's grave first?",
+     "answer": "Laertes",
+     "wrong": [
+      "Hamlet",
+      "Horatio",
+      "Gertrude"
+     ]
+    },
+    {
+     "q": "Why does Hamlet leap into the grave too?",
+     "answer": "To prove his love",
+     "wrong": [
+      "To find Yorick",
+      "To hide",
+      "To bury Yorick"
+     ]
+    },
+    {
+     "q": "'Sweets to the sweet. Farewell!' Who said it, scattering flowers?",
+     "answer": "Gertrude",
+     "wrong": [
+      "Laertes",
+      "Hamlet",
+      "Horatio"
+     ]
+    }
+   ]
+  },
+  {
+   "act": 4,
+   "scenes": "Scene 2",
+   "name": "The Duel",
+   "summary": [
+    "The rigged duel. Poison everywhere.",
+    "Almost no one makes it out."
+   ],
+   "beats": [
+    "Hamlet swapped the letter. R&G die instead.",
+    "Hamlet accepts the duel. 'Readiness is all.'",
+    "Gertrude drinks the poisoned cup. Oh no.",
+    "Laertes nicks Hamlet. Swords swap. Both hit.",
+    "Laertes confesses. Hamlet kills Claudius at last.",
+    "'The rest is silence.' Fortinbras takes over."
+   ],
+   "questions": [
+    {
+     "q": "How did Hamlet send Rosencrantz and Guildenstern to die?",
+     "answer": "Forged a letter",
+     "wrong": [
+      "Drowned them",
+      "Told the pirates",
+      "Dueled them"
+     ]
+    },
+    {
+     "q": "'The readiness is all.' What is Hamlet ready for?",
+     "answer": "Whatever comes",
+     "wrong": [
+      "The crown",
+      "His wedding",
+      "A long trip"
+     ]
+    },
+    {
+     "q": "Why does Hamlet apologize to Laertes before the duel?",
+     "answer": "To make peace",
+     "wrong": [
+      "To trick him",
+      "He's afraid",
+      "He lost a bet"
+     ]
+    },
+    {
+     "q": "Who drinks from the poisoned cup by mistake?",
+     "answer": "Gertrude",
+     "wrong": [
+      "Horatio",
+      "Hamlet",
+      "Osric"
+     ]
+    },
+    {
+     "q": "Why doesn't Claudius try harder to stop Gertrude drinking?",
+     "answer": "He'd be exposed",
+     "wrong": [
+      "He hates her",
+      "He didn't see",
+      "It's only wine"
+     ]
+    },
+    {
+     "q": "How is Laertes killed?",
+     "answer": "By his own sword",
+     "wrong": [
+      "Hamlet's dagger",
+      "The poisoned cup",
+      "Fortinbras"
+     ]
+    },
+    {
+     "q": "Who reveals the king's plot before dying?",
+     "answer": "Laertes",
+     "wrong": [
+      "Gertrude",
+      "Osric",
+      "Horatio"
+     ]
+    },
+    {
+     "q": "What does Hamlet beg Horatio to do?",
+     "answer": "Tell his story",
+     "wrong": [
+      "Drink the poison",
+      "Become king",
+      "Bury him at sea"
+     ]
+    },
+    {
+     "q": "Who takes the throne of Denmark at the end?",
+     "answer": "Fortinbras",
+     "wrong": [
+      "Horatio",
+      "Osric",
+      "Laertes"
+     ]
+    },
+    {
+     "q": "'Good night, sweet prince.' Who said it?",
+     "answer": "Horatio",
+     "wrong": [
+      "Gertrude",
+      "Laertes",
+      "Fortinbras"
+     ]
+    }
+   ]
+  }
+ ],
+ "characters": [
+  {
+   "name": "Hamlet",
+   "tag": "Prince of Procrastination",
+   "select": "To kart, or not to kart?",
+   "hit": "O, I die, Horatio!",
+   "item": "The play's the thing!",
+   "win": "The rest is silence."
+  },
+  {
+   "name": "Claudius",
+   "tag": "Totally Innocent King",
+   "select": "My offense is rank!",
+   "hit": "Give me some light!",
+   "item": "Nothing to see here.",
+   "win": "Long live... me!"
+  },
+  {
+   "name": "Gertrude",
+   "tag": "Queen of Bad Timing",
+   "select": "The lady doth protest!",
+   "hit": "The drink! The drink!",
+   "item": "Too much, methinks.",
+   "win": "One cup, please!"
+  },
+  {
+   "name": "Ophelia",
+   "tag": "Flower Delivery Service",
+   "select": "Hey non nonny!",
+   "hit": "There's rosemary!",
+   "item": "Pansies for thoughts!",
+   "win": "Good night, ladies!"
+  },
+  {
+   "name": "Polonius",
+   "tag": "Brevity Is The Soul Of...",
+   "select": "Brevity is... ahem...",
+   "hit": "O, I am slain!",
+   "item": "To thine own self!",
+   "win": "As I was saying..."
+  },
+  {
+   "name": "Laertes",
+   "tag": "Hothead With A Blade",
+   "select": "To France! Bye, Dad!",
+   "hit": "Justly killed!",
+   "item": "Poison tip, baby!",
+   "win": "Back to Paris!"
+  },
+  {
+   "name": "Horatio",
+   "tag": "The Only Sane One",
+   "select": "Sweet prince!",
+   "hit": "More Roman!",
+   "item": "I'll tell your story!",
+   "win": "I saw that coming."
+  },
+  {
+   "name": "The Ghost",
+   "tag": "Dad, Unfortunately",
+   "select": "Remember me!",
+   "hit": "Swear! ...ow.",
+   "item": "Murder most foul!",
+   "win": "Adieu, adieu!"
+  }
+ ],
+ "items": [
+  {
+   "name": "Espresso",
+   "desc": "Quick burst of speed."
+  },
+  {
+   "name": "Yorick's Skull",
+   "desc": "Rolls straight ahead."
+  },
+  {
+   "name": "Letter to England",
+   "desc": "Chases the racer ahead."
+  },
+  {
+   "name": "The Mousetrap",
+   "desc": "Snaps whoever drives over."
+  },
+  {
+   "name": "Ghost's Armor",
+   "desc": "Can't be hit. Rams others."
+  },
+  {
+   "name": "Pirate Ship",
+   "desc": "Carries you ahead."
+  },
+  {
+   "name": "Poison in the Ear",
+   "desc": "Everyone ahead naps."
+  }
+ ],
+ "wrong_lines": [
+  "Get thee to a nunnery!",
+  "Words, words, words.",
+  "Methinks not.",
+  "Something is rotten...",
+  "O, what a rogue!",
+  "O, frailty!"
+ ]
+}
