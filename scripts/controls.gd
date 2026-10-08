@@ -1,7 +1,8 @@
 class_name Controls
-## Player controls. Gamepad: left stick steers, A gas, B brake, R1 drift,
-## L1 item (hold the skull, let go to throw; stick back rolls it behind),
-## D-pad answers. Keyboard (player 1): arrows or A/D steer, X gas, Z brake,
+## Player controls. Gamepad (Xbox / PlayStation names): left stick steers,
+## A/Cross or RT/R2 gas, B/Circle or X/Square brake, RB/R1 drift, LB/L1 or
+## LT/L2 item (hold the skull, let go to throw; stick back rolls it behind),
+## D-pad answers, Start/Options pauses. Player 1 takes any connected pad. Keyboard (player 1): arrows or A/D steer, X gas, Z brake,
 ## Shift or C drift, Space item (Down held: roll it back); while a question
 ## is up the kart drives itself, so the arrow keys answer.
 
@@ -10,35 +11,39 @@ const DIRS := ["up", "right", "down", "left"]  # answer slots, as the D-pad
 
 static func setup() -> void:
 	for p in 4:
-		_action("p%d_left" % p, [JOY_AXIS_LEFT_X, -1.0], p, [KEY_LEFT, KEY_A] if p == 0 else [])
-		_action("p%d_right" % p, [JOY_AXIS_LEFT_X, 1.0], p, [KEY_RIGHT, KEY_D] if p == 0 else [])
-		_action("p%d_gas" % p, JOY_BUTTON_A, p, [KEY_X, KEY_W] if p == 0 else [])
-		_action("p%d_brake" % p, JOY_BUTTON_B, p, [KEY_Z, KEY_S] if p == 0 else [])
-		_action("p%d_drift" % p, JOY_BUTTON_RIGHT_SHOULDER, p, [KEY_SHIFT, KEY_C] if p == 0 else [])
-		_action("p%d_item" % p, JOY_BUTTON_LEFT_SHOULDER, p, [KEY_SPACE] if p == 0 else [])
-		_action("p%d_back" % p, [JOY_AXIS_LEFT_Y, 1.0], p, [KEY_DOWN] if p == 0 else [])
-		_action("p%d_fwd" % p, [JOY_AXIS_LEFT_Y, -1.0], p, [KEY_UP] if p == 0 else [])
-		_action("p%d_up" % p, JOY_BUTTON_DPAD_UP, p, [KEY_UP] if p == 0 else [])
-		_action("p%d_right_a" % p, JOY_BUTTON_DPAD_RIGHT, p, [KEY_RIGHT] if p == 0 else [])
-		_action("p%d_down" % p, JOY_BUTTON_DPAD_DOWN, p, [KEY_DOWN] if p == 0 else [])
-		_action("p%d_left_a" % p, JOY_BUTTON_DPAD_LEFT, p, [KEY_LEFT] if p == 0 else [])
+		var dev := -1 if p == 0 else p  # (-1: every device)
+		var k := p == 0
+		_action("p%d_left" % p, [[JOY_AXIS_LEFT_X, -1.0]], dev, [KEY_LEFT, KEY_A] if k else [])
+		_action("p%d_right" % p, [[JOY_AXIS_LEFT_X, 1.0]], dev, [KEY_RIGHT, KEY_D] if k else [])
+		_action("p%d_gas" % p, [JOY_BUTTON_A, [JOY_AXIS_TRIGGER_RIGHT, 1.0]], dev, [KEY_X, KEY_W] if k else [])
+		_action("p%d_brake" % p, [JOY_BUTTON_B, JOY_BUTTON_X], dev, [KEY_Z, KEY_S] if k else [])
+		_action("p%d_drift" % p, [JOY_BUTTON_RIGHT_SHOULDER], dev, [KEY_SHIFT, KEY_C] if k else [])
+		_action("p%d_item" % p, [JOY_BUTTON_LEFT_SHOULDER, [JOY_AXIS_TRIGGER_LEFT, 1.0]], dev, [KEY_SPACE] if k else [])
+		_action("p%d_back" % p, [[JOY_AXIS_LEFT_Y, 1.0]], dev, [KEY_DOWN] if k else [])
+		_action("p%d_fwd" % p, [[JOY_AXIS_LEFT_Y, -1.0]], dev, [KEY_UP] if k else [])
+		_action("p%d_up" % p, [JOY_BUTTON_DPAD_UP], dev, [KEY_UP] if k else [])
+		_action("p%d_right_a" % p, [JOY_BUTTON_DPAD_RIGHT], dev, [KEY_RIGHT] if k else [])
+		_action("p%d_down" % p, [JOY_BUTTON_DPAD_DOWN], dev, [KEY_DOWN] if k else [])
+		_action("p%d_left_a" % p, [JOY_BUTTON_DPAD_LEFT], dev, [KEY_LEFT] if k else [])
 
 
-static func _action(name: String, joy, device: int, keys: Array) -> void:
+## An action from gamepad buttons, axes ([axis, direction]) and keys.
+static func _action(name: String, joy: Array, device: int, keys: Array) -> void:
 	if InputMap.has_action(name):
 		return
 	InputMap.add_action(name, 0.2)
-	if joy is Array:
-		var m := InputEventJoypadMotion.new()
-		m.axis = joy[0]
-		m.axis_value = joy[1]
-		m.device = device
-		InputMap.action_add_event(name, m)
-	else:
-		var b := InputEventJoypadButton.new()
-		b.button_index = joy
-		b.device = device
-		InputMap.action_add_event(name, b)
+	for j in joy:
+		if j is Array:
+			var m := InputEventJoypadMotion.new()
+			m.axis = j[0]
+			m.axis_value = j[1]
+			m.device = device
+			InputMap.action_add_event(name, m)
+		else:
+			var b := InputEventJoypadButton.new()
+			b.button_index = j
+			b.device = device
+			InputMap.action_add_event(name, b)
 	for k in keys:
 		var e := InputEventKey.new()
 		e.physical_keycode = k
@@ -64,3 +69,9 @@ static func read(p: int) -> Dictionary:
 		"item_held": Input.is_action_pressed(pre + "item"),
 		"answer": answer,
 	}
+
+
+## A short rumble on every connected pad (player 1's pad may be any of them).
+static func rumble(weak: float, strong: float, seconds: float) -> void:
+	for d in Input.get_connected_joypads():
+		Input.start_joy_vibration(d, weak, strong, seconds)

@@ -100,6 +100,7 @@ var ai_think := 0.0
 var ai_alt := false
 
 var sprite: Sprite3D
+var model: Node3D  # the 3D clay model (tools/make_models.py); the sprite is the fallback
 
 
 func setup(t: Track, character: int, is_human: bool, grid_slot: int) -> void:
@@ -128,6 +129,10 @@ func setup(t: Track, character: int, is_human: bool, grid_slot: int) -> void:
 	sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	sprite.shaded = false
 	add_child(sprite)
+	model = Cast.model(ch)
+	if model:
+		sprite.visible = false
+		add_child(model)
 	_place()
 
 
@@ -451,9 +456,19 @@ func _place() -> void:
 	position = Vector3(x, y, z)
 
 
-## Pick the sprite frame for this camera: the kart's heading against the
-## line of sight; steering and sliding lean it into the turn.
+## Show the kart: the 3D model turns with the kart, leans into steering,
+## angles out in a drift and whirls in a spin; the sprite fallback picks the
+## frame for this camera, like the N64.
 func face(cam: Vector3) -> void:
+	if model:
+		var t := Time.get_ticks_msec() / 1000.0
+		# (+PI: the sculpts face +z, Godot models face -z)
+		model.rotation = Vector3(0, yaw + PI + slide * 0.35 + spin_t * 14, steer * 0.12 * clampf(speed / 300, 0, 1))
+		var bob := 0.0 if hop > 0 else sin(t * 22 + ch) * clampf(absf(speed) / 300, 0, 1) * 0.6
+		model.position.y = bob
+		model.scale = Vector3(1.15, 0.6, 1.15) if nap_t > 0 else Vector3.ONE
+		model.visible = ship_t <= 0 and not (star_t > 0 and int(star_t * 12) % 2 == 0)
+		return
 	var view_yaw := atan2(x - cam.x, z - cam.z)
 	var rel := view_yaw - yaw + spin_t * 14  # a spin-out whirls it
 	var fr := rel / (TAU / KART_FRAMES) + clampf(steer, -1, 1) * 1.6 + slide * 1.5

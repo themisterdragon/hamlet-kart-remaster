@@ -79,11 +79,14 @@ func watch(k: Kart, countdown: float, laps: int, act: int) -> void:
 		sfx("right" if k.verdict_ok else "wrong")
 	if now.boost > prev.boost + 0.2:
 		sfx("boost", 1.0, -3)
+		Controls.rumble(0.3, 0.0, 0.2)
 	if now.spin > prev.spin + 0.2:
 		sfx("spin")
 		voice(k.ch, LINE_HIT)
+		Controls.rumble(0.6, 1.0, 0.45)
 	elif now.bump > prev.bump + 0.1:
 		sfx("bonk", 1.2, -6)
+		Controls.rumble(0.5, 0.2, 0.12)
 	if now.lap > prev.lap and now.lap > 0 and not now.fin:
 		sfx("lap")
 		if now.lap == laps - 1:

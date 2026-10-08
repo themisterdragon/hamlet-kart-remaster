@@ -124,20 +124,22 @@ func _environment() -> void:
 	env.background_color = Color(th.sky)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(th.ambient)
-	env.ambient_light_energy = 0.9
+	env.ambient_light_energy = 0.5
 	env.fog_enabled = true
 	env.fog_mode = Environment.FOG_MODE_DEPTH
 	env.fog_light_color = Color(th.fog)
 	env.fog_depth_begin = float(th.fog_rng[0]) * 1.6  # a PC screen can see further than the N64 could
 	env.fog_depth_end = float(th.fog_rng[1]) * 2.2
 	env.fog_density = 1.0
-	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
 	var sun := DirectionalLight3D.new()
 	sun.light_color = Color(th.sun)
-	sun.light_energy = 0.8
+	sun.light_energy = 0.85
+	sun.shadow_enabled = true
+	sun.directional_shadow_max_distance = 900
 	sun.rotation_degrees = Vector3(-55, 35, 0)
 	add_child(sun)
 
@@ -262,7 +264,8 @@ func _process(delta: float) -> void:
 	for k in karts:
 		k.face(cam.global_position)
 		# a kart right at the camera (the grid row behind you) would fill the screen
-		k.sprite.visible = k == player or Vector2(k.x - cam.position.x, k.z - cam.position.z).length() > 50
+		if k.model == null:
+			k.sprite.visible = k == player or Vector2(k.x - cam.position.x, k.z - cam.position.z).length() > 50
 	hud.show_state(player, countdown, race_time, karts.size())
 	Sound.watch(player, countdown, LAPS, int(Content.tracks[track_index].act))
 	if online:
@@ -736,7 +739,8 @@ func _client_process(dt: float) -> void:
 	_camera(dt)
 	for k in karts:
 		k.face(cam.global_position)
-		k.sprite.visible = k.sprite.visible and (k == player or Vector2(k.x - cam.position.x, k.z - cam.position.z).length() > 50)
+		if k.model == null:
+			k.sprite.visible = k.sprite.visible and (k == player or Vector2(k.x - cam.position.x, k.z - cam.position.z).length() > 50)
 	if player.finished:
 		finished_t += dt
 		if finished_t > 2.0 and not hud.results_up:

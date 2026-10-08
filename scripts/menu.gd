@@ -361,3 +361,10 @@ func _lost(why: String) -> void:
 	_text(why, body, 36)
 	_button("OK", _title)
 	_focus_first()
+
+
+## Circle / B / Esc goes back to the title (not from inside a lobby).
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel") and not Net.active:
+		Sound.sfx("move")
+		_title()
