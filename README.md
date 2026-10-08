@@ -8,16 +8,27 @@ review questions written for grades 9–12 who read the play in a modern
 translation. This is a remaster of the Nintendo 64 homebrew edition, with the
 same content, the same rules and a modern look.
 
-**Status: milestone 0.** The content loads and the quiz card runs. There's no
-racing yet. See [docs/PLAN.md](docs/PLAN.md).
+**Play the demo in your browser:**
+https://themisterdragon.github.io/hamlet-kart-remaster/ (keyboard or gamepad),
+or download it for Windows, Mac or Linux from
+[Releases](https://github.com/themisterdragon/hamlet-kart-remaster/releases).
+
+**Status: early demo (0.1).** Races on all 16 tracks against 7 CPUs, with
+question boxes, quiz-as-turbo, drifting and a results screen. Not in yet:
+items, menus, character select, split screen, sound. See
+[docs/PLAN.md](docs/PLAN.md).
+
+Controls: left stick or arrow keys steer, A or X gas, B or Z brake, R1 or
+Shift drift (hold, lean, let go for a mini-turbo), D-pad or arrow keys
+answer while a question is up, Start or Esc pauses.
 
 ## Run it
 
 1. Install Godot 4.5 or newer (the standard build, not .NET).
 2. Open `project.godot` in the editor and press Play (F5).
 
-Quiz test screen: arrow keys or D-pad answer, Enter deals the next question,
-Page Up / Page Down changes the track.
+Builds: Project > Export in the editor (presets for Windows, Mac, Linux and
+web are included), after installing Godot's export templates.
 
 ## Where things come from
 
