@@ -5,7 +5,7 @@ extends Control
 const DIRS := ["ui_up", "ui_right", "ui_down", "ui_left"]
 const ARROWS := ["▲", "▶", "▼", "◀"]
 
-var track := 8  # Act III first: it sets the standard
+var track := 0
 var q_index := 0
 var card: Dictionary
 var answered := -1
@@ -18,6 +18,7 @@ var buttons: Array[Label] = []
 
 
 func _ready() -> void:
+	track = Content.tracks.find(Content.tracks_in_act(2)[0])  # Act III first: it sets the standard
 	var bg := ColorRect.new()
 	bg.color = Color("1b2440")
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
