@@ -2,9 +2,9 @@ extends Node3D
 ## A race: one track, 8 karts (player 1 and 7 CPUs for now), question boxes,
 ## the chase camera and the HUD. Mirrors the N64's race_start/race_update.
 ## Test args (after --): --track=N  --class=0..2  --autotest (a robot drives
-## and answers, for screenshots)  --ask (a question 1 s after GO).
+## and answers, for screenshots)  --ask (a question 1 s after GO)  --laps=N.
 
-const LAPS := 4
+var LAPS := 4  # (--laps=N in test runs)
 const BOX_ROWS := [0.14, 0.47, 0.76]
 const BOX_PER_ROW := 4
 const CAM_BACK := 90.0
@@ -18,7 +18,9 @@ var countdown := 3.99
 var race_time := 0.0
 var autotest := false
 var ask_test := false
-var track_index := 6  # Act III's first track: it sets the standard
+static var next_track := 6  # Act III's first track sets the standard; the demo then tours the rest
+var track_index := 6
+var finished_t := 0.0  # how long the player has been over the line
 
 var cam: Camera3D
 var cam_yaw := 0.0
@@ -28,6 +30,8 @@ var hud: Hud
 
 func _ready() -> void:
 	Controls.setup()
+	process_mode = Node.PROCESS_MODE_ALWAYS  # so Esc/Start still works while paused
+	track_index = next_track
 	var cls := 1
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--track="):
@@ -37,6 +41,8 @@ func _ready() -> void:
 		elif arg == "--autotest":
 			autotest = true
 			seed(1)  # the same race every time, so screenshots repeat
+		elif arg.begins_with("--laps="):
+			LAPS = int(arg.substr(7))
 		elif arg == "--ask":
 			ask_test = true
 	track = Track.new()
@@ -130,8 +136,46 @@ func _boxes() -> void:
 			boxes.append({"node": node, "cube": mi, "seg": seg, "lat": lat, "pos": pos, "respawn": 0.0})
 
 
+## Pause (Esc / Start), and after the finish: next track or race again.
+func _unhandled_input(event: InputEvent) -> void:
+	var start: bool = event.is_action_pressed("ui_cancel") or (event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_START)
+	if hud.results_up:
+		if event.is_action_pressed("ui_accept") or start:
+			next_track = (track_index + 1) % Content.tracks.size()
+			get_tree().reload_current_scene()
+		elif _is_restart(event):
+			get_tree().reload_current_scene()
+		return
+	if get_tree().paused:
+		if start or event.is_action_pressed("ui_accept"):
+			_pause(false)
+		elif _is_restart(event):
+			_pause(false)
+			get_tree().reload_current_scene()
+		elif event is InputEventKey and event.pressed and event.physical_keycode == KEY_Q and not OS.has_feature("web"):
+			get_tree().quit()
+	elif start:
+		_pause(true)
+
+
+func _is_restart(event: InputEvent) -> bool:
+	return (event is InputEventKey and event.pressed and event.physical_keycode == KEY_R) or \
+		(event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_Y)
+
+
+func _pause(on: bool) -> void:
+	get_tree().paused = on
+	hud.show_pause(on)
+
+
 func _process(delta: float) -> void:
+	if get_tree().paused:
+		return
 	var dt := minf(delta, 1.0 / 20)
+	if player.finished:
+		finished_t += dt
+		if finished_t > 2.0 and not hud.results_up:
+			hud.show_results(karts, player)
 	var racing := countdown <= 0
 	if countdown > 0:
 		countdown -= dt

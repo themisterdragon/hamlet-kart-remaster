@@ -7,5 +7,6 @@ license and third-party notices.
 
 ## Fonts
 
-Almendra, Lilita One and Andika, under the SIL Open Font License 1.1. The
-license texts are next to the fonts in `assets/fonts/`.
+Almendra, Lilita One, Andika and Noto Sans Symbols 2 (the D-pad arrows,
+tick and cross), under the SIL Open Font License 1.1. The license texts are
+next to the fonts in `assets/fonts/`.

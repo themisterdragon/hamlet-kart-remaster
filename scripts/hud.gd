@@ -3,7 +3,6 @@ extends CanvasLayer
 ## The race HUD, kept clean: lap and time up top, place in the corner, the
 ## countdown, and the quiz panel only while a question is up.
 
-const ARROWS := ["▲", "▶", "▼", "◀"]
 const PLACE_COLOURS := ["f2c94c", "d8dde6", "d79a5a"]  # gold, silver, bronze; then white
 const ORDINAL := ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th"]
 
@@ -20,7 +19,11 @@ var card: VBoxContainer
 var panel: PanelContainer
 var q_label: Label
 var a_labels: Array[Label] = []
+var a_arrows: Array[DpadArrow] = []
 var shown_q := ""
+var results_up := false
+var overlay: PanelContainer
+var overlay_text: Label
 
 
 func setup(content_track: Dictionary, lap_count: int) -> void:
@@ -86,13 +89,21 @@ func setup(content_track: Dictionary, lap_count: int) -> void:
 	var grid := GridContainer.new()
 	grid.columns = 3
 	grid.add_theme_constant_override("h_separation", 24)
+	var rows: Array[HBoxContainer] = []
 	for i in 4:
+		var row := HBoxContainer.new()
+		row.alignment = BoxContainer.ALIGNMENT_CENTER
+		row.custom_minimum_size = Vector2(280, 0)
+		row.add_theme_constant_override("separation", 10)
+		var arrow := DpadArrow.new(i, 22)
 		var a := _label(body, 32, Color.WHITE)
-		a.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		a.custom_minimum_size = Vector2(280, 0)
+		row.add_child(arrow)
+		row.add_child(a)
+		a_arrows.append(arrow)
 		a_labels.append(a)
+		rows.append(row)
 	# up / left, right / down, in a diamond
-	var cells := [null, a_labels[0], null, a_labels[3], null, a_labels[1], null, a_labels[2], null]
+	var cells := [null, rows[0], null, rows[3], null, rows[1], null, rows[2], null]
 	for c in cells:
 		grid.add_child(c if c else Control.new())
 	box.add_child(grid)
@@ -103,6 +114,22 @@ func setup(content_track: Dictionary, lap_count: int) -> void:
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 24)
 	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+
+	# pause and results: one centred panel
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	overlay = PanelContainer.new()
+	var ob := sb.duplicate()
+	ob.bg_color = Color(0.06, 0.08, 0.16, 0.86)
+	ob.content_margin_left = 64
+	ob.content_margin_right = 64
+	ob.content_margin_top = 36
+	ob.content_margin_bottom = 36
+	overlay.add_theme_stylebox_override("panel", ob)
+	overlay_text = _label(body, 38, Color.WHITE)
+	overlay_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	overlay.add_child(overlay_text)
+	overlay.visible = false
+	root.add_child(overlay)
 
 
 func _label(font: Font, size: int, color: Color) -> Label:
@@ -129,7 +156,7 @@ func show_state(k: Kart, countdown: float, time: float, racers: int) -> void:
 	else:
 		count_label.text = ""
 	if k.finished:
-		count_label.text = "Finish!"
+		count_label.text = "" if results_up else "Finish!"
 
 	var asking := k.asking or k.verdict_t > 0
 	panel.visible = asking
@@ -151,5 +178,41 @@ func show_state(k: Kart, countdown: float, time: float, racers: int) -> void:
 				col = Color("ff8a80")
 			else:
 				col = Color(1, 1, 1, 0.45)
-		a_labels[i].text = "%s %s%s" % [ARROWS[i], k.question.answers[i], mark]
+		a_labels[i].text = "%s%s" % [k.question.answers[i], mark]
 		a_labels[i].add_theme_color_override("font_color", col)
+		a_arrows[i].color = col
+
+
+func _show_overlay(text: String) -> void:
+	overlay_text.text = text
+	overlay.visible = true
+	overlay.reset_size()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_CENTER, Control.PRESET_MODE_MINSIZE)
+
+
+func _quit_hint() -> String:
+	return "" if OS.has_feature("web") else "\nQ  Quit"
+
+
+func show_pause(on: bool) -> void:
+	if not on:
+		overlay.visible = false
+		return
+	_show_overlay("Paused\n\nEnter / Start  Resume\nR / Y  Restart race" + _quit_hint())
+
+
+func show_results(karts: Array, me: Kart) -> void:
+	results_up = true
+	panel.visible = false
+	var order := karts.duplicate()
+	order.sort_custom(func(a, b): return a.place < b.place)
+	var lines := ["Results", ""]
+	for k in order:
+		var who: String = Content.characters[k.ch].name
+		var t := "%d:%05.2f" % [int(k.finish_time) / 60, fmod(k.finish_time, 60)] if k.finished else "—"
+		lines.append(("%s   %s   %s" % [ORDINAL[k.place - 1], who, t]) + ("   ◀ you" if k == me else ""))
+	lines.append("")
+	lines.append("Questions right: %d of %d" % [me.right, me.right + me.wrong])
+	lines.append("")
+	lines.append("Enter / Start  Next track\nR / Y  Race again" + _quit_hint())
+	_show_overlay("\n".join(lines))

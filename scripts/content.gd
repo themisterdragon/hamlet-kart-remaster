@@ -9,6 +9,13 @@ var wrong_lines: Array = []
 
 
 func _ready() -> void:
+	# the D-pad arrows, tick and cross come from a symbol font, so they show on
+	# every computer (Windows has no system fallback for them)
+	var symbols: Font = load("res://assets/fonts/NotoSansSymbols2-Regular.ttf")
+	for f in ["Andika-Bold.ttf", "LilitaOne-Regular.ttf", "Almendra-Bold.ttf"]:
+		var font: FontFile = load("res://assets/fonts/" + f)
+		font.fallbacks = [symbols]
+		font.allow_system_fallback = false  # look the same everywhere, and show it here if a glyph is missing
 	var text := FileAccess.get_file_as_string("res://data/content.json")
 	var data = JSON.parse_string(text)
 	if data == null:

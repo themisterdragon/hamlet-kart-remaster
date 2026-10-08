@@ -10,6 +10,10 @@ config/description="A kart racer that teaches Hamlet: right answers are turbo."
 run/main_scene="res://scenes/race.tscn"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 config/icon="res://assets/images/emblem.png"
+boot_splash/bg_color=Color(0.105882, 0.141176, 0.25098, 1)
+boot_splash/image="res://assets/images/emblem.png"
+boot_splash/fullsize=false
+boot_splash/use_filter=true
 
 [autoload]
 
@@ -29,3 +33,4 @@ window/stretch/aspect="expand"
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+textures/vram_compression/import_etc2_astc=true
