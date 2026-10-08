@@ -14,7 +14,7 @@ import os, re, subprocess, sys
 ROOT = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True,
                       check=True).stdout.strip()
 GENERIC = [rb"/home/[A-Za-z0-9_.-]+", rb"/Users/[A-Za-z0-9_.-]+", rb"[A-Za-z]:\\\\?Users\\\\?[A-Za-z0-9_.-]+"]
-EMAIL = re.compile(rb"[A-Za-z0-9_.+-]+@[A-Za-z0-9-]+\.[A-Za-z0-9.-]+")
+EMAIL = re.compile(rb"[A-Za-z0-9_.+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}\b")  # (a version like name@1.5.4 is not one)
 EMAIL_OK = re.compile(rb"(@users\.noreply\.github\.com|@anthropic\.com|@example\.(com|org))$")
 SKIP = {"LICENSE"}  # the GPL text itself
 

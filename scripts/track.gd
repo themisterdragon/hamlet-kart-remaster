@@ -25,6 +25,9 @@ var split_b := -1
 var split_peak := 0.0
 var theme: Dictionary
 var props: Array
+var pads: Array = []  # boost pads: {seg, lat}
+var ramp := -1        # sample of the launch ramp, -1 if none
+var hazard_samples: Array[int] = []
 var ground_y := 0.0
 var centre := Vector2.ZERO
 
@@ -64,6 +67,11 @@ func load_track(i: int) -> void:
 		lo = lo.min(Vector2(pts[k].x, pts[k].z))
 		hi = hi.max(Vector2(pts[k].x, pts[k].z))
 	centre = (lo + hi) / 2
+	hazard_samples.clear()
+	for h in t.hazards:
+		hazard_samples.append(int(float(h.at) * n))
+	_place_pads()
+	_place_ramp()
 	_build()
 
 
@@ -168,7 +176,94 @@ func lat_range(seg: int, t: float, lat: float) -> Vector2:
 	return Vector2(lo, hi)
 
 
+## How much the road bends over samples i..j.
+func _turn(i: int, j: int) -> float:
+	var turn := 0.0
+	for k in range(i, j):
+		var a := fwd[posmod(k, n)]
+		var b := fwd[posmod(k + 1, n)]
+		turn += absf(a.x * b.y - a.y * b.x)
+	return turn
+
+
+## Boost pads go on the straightest stretch after each row of question
+## boxes, never in a split, lanes alternating centre / left / right; the
+## other route of a split (the bold choice) gets two. Same as the N64.
+func _place_pads() -> void:
+	pads.clear()
+	var rows := [0.14, 0.47, 0.76]
+	var lanes := [0.0, -0.45, 0.45]
+	for k in 3:
+		var best := -1
+		var best_turn := INF
+		for i in range(int((rows[k] + 0.09) * n), int((rows[k] + 0.24) * n)):
+			var turn := _turn(i, i + 8)
+			if turn < best_turn:
+				best_turn = turn
+				best = i
+		if best < 0 or (split_a >= 0 and best + 2 >= split_a - 4 and best <= split_b + 4):
+			continue
+		pads.append({"seg": (best + 2) % n, "lat": lanes[k] * road_half})
+	if split_a >= 0:
+		for pct in [38, 60]:
+			var s: int = split_a + (split_b - split_a) * pct / 100
+			pads.append({"seg": s, "lat": split_off(s, 1)})
+
+
+## One launch ramp: the straightest stretch between the question rows,
+## clear of hazards, boost pads and splits.
+func _place_ramp() -> void:
+	ramp = -1
+	var best_turn := INF
+	for w in [[0.27, 0.41], [0.58, 0.70]]:
+		for i in range(int(w[0] * n), int(w[1] * n)):
+			var clear := true
+			for h in hazard_samples:
+				if absi(h - i) < 12:
+					clear = false
+			for p in pads:
+				if absi(p.seg - i) < 8:
+					clear = false
+			if split_a >= 0 and i >= split_a - 10 and i <= split_b + 10:
+				clear = false
+			if not clear:
+				continue
+			var turn := _turn(i - 4, i + 6)
+			if turn < best_turn:
+				best_turn = turn
+				ramp = i
+
+
 # ------------------------------------------------------------------ building
+
+## A point `t` of the way from sample i to i+1, `lat` across, `dy` up.
+func _at(i: int, t: float, lat: float, dy: float) -> Vector3:
+	return _edge(i, lat, dy).lerp(_edge(i + 1, lat, dy), t)
+
+
+## Gold plate with two bright chevrons pointing down the road.
+func _build_pad(st: SurfaceTool, seg: int, lat: float) -> void:
+	var w := Kart.PAD_HALF
+	var gold := Color("c88a18")
+	var bright := Color("fff0a0")
+	for k in Kart.PAD_LEN:
+		_quad(st, _at(seg + k, 0, lat - w, 0.8), _at(seg + k, 1, lat - w, 0.8), _at(seg + k, 1, lat + w, 0.8), _at(seg + k, 0, lat + w, 0.8), gold)
+		var t0 := 0.15
+		var t1 := 0.75
+		var th := 0.22
+		var i := seg + k
+		_quad(st, _at(i, t0, lat - w * 0.8, 1.2), _at(i, t0 + th, lat - w * 0.8, 1.2), _at(i, t1 + th, lat, 1.2), _at(i, t1, lat, 1.2), bright)
+		_quad(st, _at(i, t0 + th, lat + w * 0.8, 1.2), _at(i, t0, lat + w * 0.8, 1.2), _at(i, t1, lat, 1.2), _at(i, t1 + th, lat, 1.2), bright)
+
+
+## A wedge across the road, rising to the lip, striped gold and dark.
+func _build_ramp(st: SurfaceTool, seg: int) -> void:
+	for k in 6:
+		var l0 := -road_half + k * road_half / 3
+		var l1 := l0 + road_half / 3
+		var c := Color("d9a520") if k % 2 else Color("5a3a1a")
+		_quad(st, _at(seg, 0, l0, 0.5), _at(seg, 1, l0, Kart.RAMP_H), _at(seg, 1, l1, Kart.RAMP_H), _at(seg, 0, l1, 0.5), c)
+		_quad(st, _at(seg, 1, l1, Kart.RAMP_H), _at(seg, 1, l0, Kart.RAMP_H), _at(seg, 1, l0, 0), _at(seg, 1, l1, 0), Color("3a2410"))
 
 func _col(key: String) -> Color:
 	return Color(theme[key])
@@ -244,6 +339,10 @@ func _build() -> void:
 				_quad(deco, _edge(i, e0, 0.2 + lift), _edge(j, e1, 0.2 + lift), _edge(j, out1, 0.2 + lift), _edge(i, out0, 0.2 + lift), shoulder_col)
 		_walls(deco, i, j, pairs, curb, curb_dark, skirt)
 		v += dv
+	for p in pads:
+		_build_pad(deco, p.seg, p.lat)
+	if ramp >= 0:
+		_build_ramp(deco, ramp)
 	var road_mat := StandardMaterial3D.new()
 	road_mat.vertex_color_use_as_albedo = true
 	road_mat.albedo_texture = load("res://assets/images/tex/%02d.png" % ROAD_MATERIAL[index])

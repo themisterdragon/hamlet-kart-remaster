@@ -45,6 +45,19 @@ Test runs: `tools/shot.sh` (software rendering, hidden display).
 8. Saves: best times per track and class (user folder; browser storage on web).
 9. Exports: Windows, Mac, Linux, Web.
 
+## Milestone 1.5: online class races (join code, up to 8 players)
+Students race each other from their own browsers or PCs: one machine hosts
+and shows a short join code, up to 8 players enter it and pick characters,
+CPUs fill the empty karts. Host-authoritative (the host runs the race,
+players send their controls), so every screen shows the same race.
+- Godot WebRTC (works in the web build) plus a small signaling server for
+  the codes. GitHub Pages can't run one, so it needs a free-tier host.
+- Check it on school networks early: some block peer-to-peer traffic, so
+  plan a relay fallback (TURN).
+- Privacy: no accounts, no names stored; nicknames or teacher-given codes.
+- Keep the kart code input-driven (it already takes controls as data each
+  frame) so local split screen and online share one path.
+
 ## Milestone 2: remaster, one Act at a time
 Act III first; it sets the standard.
 - 3D cast and karts (scripted Blender models in the Royal Storybook style),

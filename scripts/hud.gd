@@ -22,6 +22,9 @@ var a_labels: Array[Label] = []
 var a_arrows: Array[DpadArrow] = []
 var shown_q := ""
 var results_up := false
+var item_box: PanelContainer
+var item_icon: TextureRect
+var item_tex: Array[Texture2D] = []
 var overlay: PanelContainer
 var overlay_text: Label
 
@@ -54,6 +57,28 @@ func setup(content_track: Dictionary, lap_count: int) -> void:
 	count_label.position = Vector2(-300, -260)
 	count_label.size = Vector2(600, 260)
 	root.add_child(count_label)
+
+	# the item slot: top centre, a gold frame with the item inside
+	for i in 7:
+		item_tex.append(load("res://assets/images/items/%02d.png" % i))
+	item_box = PanelContainer.new()
+	var ib := StyleBoxFlat.new()
+	ib.bg_color = Color(0.06, 0.08, 0.16, 0.55)
+	ib.border_color = Color("f2c94c")
+	ib.set_border_width_all(5)
+	ib.set_corner_radius_all(16)
+	ib.set_content_margin_all(10)
+	item_box.add_theme_stylebox_override("panel", ib)
+	item_icon = TextureRect.new()
+	item_icon.custom_minimum_size = Vector2(96, 96)
+	item_box.custom_minimum_size = Vector2(120, 120)
+	item_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	item_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	item_icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	item_box.add_child(item_icon)
+	root.add_child(item_box)
+	item_box.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP, Control.PRESET_MODE_MINSIZE, 28)
+	item_box.grow_horizontal = Control.GROW_DIRECTION_BOTH
 
 	# the title card: scene and name, on the grid before GO
 	card = VBoxContainer.new()
@@ -158,6 +183,17 @@ func show_state(k: Kart, countdown: float, time: float, racers: int) -> void:
 	if k.finished:
 		count_label.text = "" if results_up else "Finish!"
 
+	# the item: spins through the icons while the box decides, dims while held
+	if k.roulette_t > 0:
+		item_icon.texture = item_tex[int(k.roulette_t * 14) % item_tex.size()]
+		item_icon.modulate = Color(1, 1, 1, 0.8)
+	elif k.item >= 0:
+		item_icon.texture = item_tex[k.item]
+		item_icon.modulate = Color(1, 1, 1, 0.5) if k.holding else Color.WHITE
+	else:
+		item_icon.texture = null
+	card.position.y = 190  # below the item slot
+
 	var asking := k.asking or k.verdict_t > 0
 	panel.visible = asking
 	if not asking:
@@ -214,5 +250,10 @@ func show_results(karts: Array, me: Kart) -> void:
 	lines.append("")
 	lines.append("Questions right: %d of %d" % [me.right, me.right + me.wrong])
 	lines.append("")
-	lines.append("Enter / Start  Next track\nR / Y  Race again" + _quit_hint())
+	if Game.mode == Game.Mode.HOST and Net.active:
+		lines.append("Enter / Start  Back to the lobby")
+	elif Game.mode == Game.Mode.CLIENT and Net.active:
+		lines.append("Waiting for the host to pick the next scene...")
+	else:
+		lines.append("Enter / Start  Next track\nR / Y  Race again\nM  Menu" + _quit_hint())
 	_show_overlay("\n".join(lines))

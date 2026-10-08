@@ -2,7 +2,7 @@ class_name Kart
 extends Node3D
 ## One racer: the N64's kart_update() (src/race.c), in the same units and
 ## with the same numbers, so the remaster handles like the cartridge.
-## Items, spins and hazards come in a later step.
+## The race (scripts/race.gd) owns items in flight, hazards and bumps.
 
 const TOP_SPEED := 470.0
 const ACCEL := 330.0
@@ -28,10 +28,14 @@ const STATS := [
 const KART_FRAMES := 32
 const KART_PX_PER_UNIT := 0.9  # tools/make_sprites.py
 const KART_ANCHOR_Y := 58       # frame row the wheels sit on
-
-signal hit_box(kart: Kart)
+const RAMP_H := 14.0     # the launch ramp's lip
+const PAD_LEN := 2       # samples a boost pad covers
+const PAD_HALF := 22.0   # half its width
+enum { IT_NONE = -1, IT_ESPRESSO, IT_SKULL, IT_LETTER, IT_MOUSETRAP, IT_ARMOR, IT_SHIP, IT_POISON }
 
 var track: Track
+var race  # scripts/race.gd: items are used through it
+var peer := ""  # online: the player driving this kart ("" = here or a CPU)
 var ch := 0
 var human := false
 var race_class := 1
@@ -62,6 +66,20 @@ var shake_t := 0.0
 var drift_dir := 0
 var drift_arm := false
 var drift_t := 0.0
+var airborne := false   # launched off the ramp: land straight for a boost
+var pad_t := 0.0        # boost pad cool-down
+
+# items and what they do to you
+var item := IT_NONE
+var roulette_t := 0.0   # the item box spinning before it lands
+var holding := false    # Yorick's Skull held behind the kart, as a shield
+var hold_t := 0.0
+var spin_t := 0.0
+var star_t := 0.0       # Ghost's Armor: can't be hit, rams others
+var ship_t := 0.0       # Pirate Ship: carried ahead
+var nap_t := 0.0        # Poison in the Ear: slowed to a crawl
+var draft_t := 0.0      # slipstream building up behind a kart
+var start_press := 0.0  # countdown value when gas went down (rocket start)
 
 # the quiz
 var asking := false
@@ -121,10 +139,21 @@ func top_speed() -> float:
 	return TOP_SPEED * STATS[ch][0] * CLASS_SPEED[race_class]
 
 
-## One frame. `pad` (humans): {stick: -1..1, gas, brake, drift_press, drift_held, answer: -1..3}.
-func update(dt: float, pad: Dictionary, racing: bool, best_human_progress: float) -> void:
-	if not racing:
+func immune() -> bool:
+	return star_t > 0 or ship_t > 0
+
+
+## One frame. `pad` (humans): {stick, stick_y: -1..1, gas, brake, drift_press,
+## drift_held, item, item_held, answer: -1..3}.
+func update(dt: float, pad: Dictionary, countdown: float, best_human_progress: float) -> void:
+	if countdown > 0:
 		y = track.height(seg, seg_t)
+		# rocket start: note when gas went down; letting go resets it
+		if human:
+			if not pad.gas:
+				start_press = 0
+			elif start_press <= 0:
+				start_press = countdown
 		_place()
 		return
 	var st: Array = STATS[ch]
@@ -139,6 +168,12 @@ func update(dt: float, pad: Dictionary, racing: bool, best_human_progress: float
 		steer_in = signf(sx) * pow(mag, 1.6)
 		gas = pad.gas
 		brake = pad.brake
+		if pad.item:
+			race.use_item(self)
+		if holding:
+			hold_t += dt
+			if not pad.item_held:
+				race.release_skull(self, pad.stick_y < -0.4)  # stick pulled back: roll it behind
 		if asking or verdict_t > 0:
 			# the kart drives itself while the question is up, and until the
 			# verdict strip has gone, so the wheel comes back with the road clear
@@ -163,8 +198,8 @@ func update(dt: float, pad: Dictionary, racing: bool, best_human_progress: float
 				drift_dir = 1 if sx > 0 else -1
 				drift_t = 0
 			if drift_dir != 0:
-				if not pad.drift_held or speed < 100:
-					if not pad.drift_held and drift_t > DRIFT_BLUE:
+				if not pad.drift_held or spin_t > 0 or speed < 100:
+					if not pad.drift_held and spin_t <= 0 and drift_t > DRIFT_BLUE:
 						boost_t = maxf(boost_t, 1.4 if drift_t > DRIFT_ORANGE else 0.7)
 					drift_dir = 0
 				else:
@@ -175,21 +210,24 @@ func update(dt: float, pad: Dictionary, racing: bool, best_human_progress: float
 		steer_in = _steer_ai(dt)
 		gas = true
 		# CPUs drift through the sharp bends too
-		if drift_dir == 0 and absf(steer_in) > 0.75 and speed > 260 and hop <= 0:
+		if item != IT_NONE and roulette_t <= 0 and randf() < dt * 0.5:  # CPU items: used after a short think
+			race.use_item(self)
+		if drift_dir == 0 and absf(steer_in) > 0.75 and speed > 260 and hop <= 0 and spin_t <= 0:
 			drift_dir = 1 if steer_in > 0 else -1
 			drift_t = 0
 			hop_v = 90
 		elif drift_dir != 0:
 			drift_t += dt
-			if steer_in * drift_dir < 0.2 or drift_t > 2.4:
-				if drift_t > DRIFT_BLUE:
+			if steer_in * drift_dir < 0.2 or spin_t > 0 or drift_t > 2.4:
+				if drift_t > DRIFT_BLUE and spin_t <= 0:
 					boost_t = maxf(boost_t, 1.1 if drift_t > DRIFT_ORANGE else 0.5)
 				drift_dir = 0
 
-	if human and finished:  # autopilot after the finish line
+	if ship_t > 0 or (human and finished):  # the pirate ship, and after the finish line
 		var tp := track.point(seg + 6, 0, 0)
 		steer_in = clampf(-wrapf(atan2(tp.x - x, tp.z - z) - yaw, -PI, PI) * 2.5, -1, 1)
 		gas = true
+		brake = false
 
 	var top := top_speed()
 	if not human:
@@ -198,8 +236,17 @@ func update(dt: float, pad: Dictionary, racing: bool, best_human_progress: float
 		top *= clampf(0.95 - gap * 0.25, 0.86, 1.04)
 	if boost_t > 0:
 		top *= 1.45
+	if star_t > 0:
+		top *= 1.15
+	if ship_t > 0:
+		top *= 1.4
+	if nap_t > 0:
+		top *= 0.4
 
-	if boost_t > 0:
+	if spin_t > 0:
+		speed = move_toward_exp(speed, 0, dt * 3)
+		steer_in = 0
+	elif boost_t > 0 or ship_t > 0:
 		speed = move_toward_exp(speed, top, dt * 4)
 	elif gas:
 		if speed < top:
@@ -229,6 +276,11 @@ func update(dt: float, pad: Dictionary, racing: bool, best_human_progress: float
 	hop_v -= 520 * dt
 	hop += hop_v * dt
 	if hop < 0:
+		if airborne:
+			airborne = false
+			# land pointing down the road for a little boost
+			if absf(wrapf(track.yaw_at(seg) - yaw, -PI, PI)) < 0.25:
+				boost_t = maxf(boost_t, 0.6)
 		hop = 0
 		hop_v = 0
 	y = track.height(seg, seg_t) + hop
@@ -242,13 +294,44 @@ func update(dt: float, pad: Dictionary, racing: bool, best_human_progress: float
 	prev_seg = seg
 	progress = lap * n + seg + seg_t
 
-	for k in ["boost_t", "bump_t", "shake_t", "verdict_t"]:
+	# the launch ramp: fast karts fly
+	if track.ramp >= 0 and seg == track.ramp and not airborne and speed > 200 and absf(lat) < track.road_half:
+		hop = maxf(hop, RAMP_H * seg_t)  # ride up the wedge
+		hop_v = maxf(hop_v, 0)
+		if seg_t > 0.8:
+			hop_v = 130 + speed * 0.18
+			airborne = true
+			drift_dir = 0
+			drift_arm = false
+	# boost pads
+	if pad_t <= 0:
+		for p in track.pads:
+			if posmod(seg - p.seg, n) < PAD_LEN and absf(lat - p.lat) <= PAD_HALF + 6:
+				boost_t = maxf(boost_t, 1.0)
+				pad_t = 0.8
+				race.on_boost(self)
+
+	for k in ["boost_t", "bump_t", "shake_t", "verdict_t", "spin_t", "star_t", "ship_t", "nap_t", "pad_t", "roulette_t"]:
 		set(k, maxf(get(k) - dt, 0))
 	if asking:
 		ask_t -= dt
 		if ask_t <= 0:
 			answer(-1)
 	_place()
+
+
+## Knocked into a spin (items; scenery only ever bumps).
+func hit(spin: float) -> void:
+	if immune() or finished:
+		return
+	if holding:  # knocked out of your hands
+		holding = false
+		item = IT_NONE
+	shake_t = 0.35
+	spin_t = maxf(spin_t, spin)
+	speed *= 0.35
+	hop_v = 140
+	race.on_hit(self)
 
 
 static func move_toward_exp(from: float, to: float, k: float) -> float:
@@ -356,6 +439,7 @@ func answer(slot: int) -> void:
 		if hot:
 			streak = 0
 		boost_t = maxf(boost_t, 1.8 if hot else 0.8)
+		race.give_item(self, 1 if hot else 0)
 	else:
 		wrong += 1
 		streak = 0
@@ -371,7 +455,44 @@ func _place() -> void:
 ## line of sight; steering and sliding lean it into the turn.
 func face(cam: Vector3) -> void:
 	var view_yaw := atan2(x - cam.x, z - cam.z)
-	var fr := (view_yaw - yaw) / (TAU / KART_FRAMES) + clampf(steer, -1, 1) * 1.6 + slide * 1.5
+	var rel := view_yaw - yaw + spin_t * 14  # a spin-out whirls it
+	var fr := rel / (TAU / KART_FRAMES) + clampf(steer, -1, 1) * 1.6 + slide * 1.5
 	sprite.frame = posmod(roundi(fr), KART_FRAMES)
 	var bob := 0.0 if hop > 0 else sin(Time.get_ticks_msec() / 1000.0 * 22 + ch) * clampf(absf(speed) / 300, 0, 1) * 0.8
 	sprite.position.y = bob
+	# napping squashes; the armour glows gold and blinks
+	sprite.scale = Vector3(1.15, 0.6, 1) if nap_t > 0 else Vector3.ONE
+	sprite.modulate = Color(1.0, 0.85, 0.4) if star_t > 0 and int(star_t * 12) % 2 == 0 else Color.WHITE
+	sprite.visible = ship_t <= 0  # aboard the pirate ship
+
+
+
+# ------------------------------------------------------------- online
+
+const SNAP := ["x", "y", "z", "yaw", "steer", "slide", "hop", "speed", "spin_t", "star_t", "ship_t", "nap_t",
+	"boost_t", "shake_t", "bump_t", "place", "lap", "finished", "finish_time", "item", "roulette_t", "holding",
+	"asking", "ask_t", "verdict_t", "verdict_ok", "answered", "right", "wrong", "drift_dir", "drift_t"]
+
+
+## (host) This kart's state for players' screens.
+func snap() -> Array:
+	var a := []
+	for k in SNAP:
+		var v = get(k)
+		a.append(snappedf(v, 0.01) if v is float else v)
+	return a
+
+
+## (player) Show the host's state.
+func apply(a: Array) -> void:
+	for i in SNAP.size():
+		var k: String = SNAP[i]
+		var v = a[i]
+		match typeof(get(k)):
+			TYPE_INT:
+				set(k, int(v))
+			TYPE_BOOL:
+				set(k, bool(v))
+			_:
+				set(k, float(v))
+	_place()

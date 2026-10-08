@@ -1,8 +1,9 @@
 class_name Controls
 ## Player controls. Gamepad: left stick steers, A gas, B brake, R1 drift,
-## L1 item, D-pad answers. Keyboard (player 1): arrows or A/D steer,
-## X gas, Z brake, Shift or C drift, Space item; while a question is up the
-## kart drives itself, so the arrow keys answer.
+## L1 item (hold the skull, let go to throw; stick back rolls it behind),
+## D-pad answers. Keyboard (player 1): arrows or A/D steer, X gas, Z brake,
+## Shift or C drift, Space item (Down held: roll it back); while a question
+## is up the kart drives itself, so the arrow keys answer.
 
 const DIRS := ["up", "right", "down", "left"]  # answer slots, as the D-pad
 
@@ -15,6 +16,8 @@ static func setup() -> void:
 		_action("p%d_brake" % p, JOY_BUTTON_B, p, [KEY_Z, KEY_S] if p == 0 else [])
 		_action("p%d_drift" % p, JOY_BUTTON_RIGHT_SHOULDER, p, [KEY_SHIFT, KEY_C] if p == 0 else [])
 		_action("p%d_item" % p, JOY_BUTTON_LEFT_SHOULDER, p, [KEY_SPACE] if p == 0 else [])
+		_action("p%d_back" % p, [JOY_AXIS_LEFT_Y, 1.0], p, [KEY_DOWN] if p == 0 else [])
+		_action("p%d_fwd" % p, [JOY_AXIS_LEFT_Y, -1.0], p, [KEY_UP] if p == 0 else [])
 		_action("p%d_up" % p, JOY_BUTTON_DPAD_UP, p, [KEY_UP] if p == 0 else [])
 		_action("p%d_right_a" % p, JOY_BUTTON_DPAD_RIGHT, p, [KEY_RIGHT] if p == 0 else [])
 		_action("p%d_down" % p, JOY_BUTTON_DPAD_DOWN, p, [KEY_DOWN] if p == 0 else [])
@@ -56,6 +59,8 @@ static func read(p: int) -> Dictionary:
 		"brake": Input.is_action_pressed(pre + "brake"),
 		"drift_press": Input.is_action_just_pressed(pre + "drift"),
 		"drift_held": Input.is_action_pressed(pre + "drift"),
+		"stick_y": Input.get_axis(pre + "back", pre + "fwd"),  # pulled back is negative
 		"item": Input.is_action_just_pressed(pre + "item"),
+		"item_held": Input.is_action_pressed(pre + "item"),
 		"answer": answer,
 	}
