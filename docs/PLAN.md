@@ -21,8 +21,17 @@ with Vulkan.
 - `tools/import_content.py`: N64 content → `data/content.json`, plus fonts and images.
 - Content autoload and a quiz test screen at 1080p.
 
-## Milestone 1: faithful port
+## Milestone 1: faithful port (in progress)
 Same look as the N64 (kart sprites, the same tracks), at high resolution and 60 fps.
+
+Done so far (Act III's "To Be or Not to Be" by default; `-- --track=N` for others):
+all 16 layouts imported from the N64 track builder (splits included); road,
+curbs, barriers and stand-in scenery; the N64's kart handling, barrier
+bounces, hop-drift mini-turbos and kart bumps; 7 CPUs on the N64's racing
+line with its rubber band; question boxes, the quiz panel, quiz-as-turbo with
+streaks, missed questions coming back; chase camera; lap, time and place HUD.
+Test runs: `tools/shot.sh` (software rendering, hidden display).
+
 1. Track geometry: rebuild the 16 track loops from the N64 track data as
    Godot paths (road mesh, barriers, boxes, boost pads, ramps, splits).
 2. Kart physics: speed, steering curve, hop-drift with mini-turbo on R,

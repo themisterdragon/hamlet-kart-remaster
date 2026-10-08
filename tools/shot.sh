@@ -1,5 +1,5 @@
 #!/bin/bash
-# shot.sh OUT_DIR FRAMES [PRESSES] [extra godot args]
+# shot.sh OUT_DIR FRAMES [PRESSES] [game args, e.g. --autotest --track=6]
 # Runs the game with software rendering (no graphics chip: this laptop has
 # frozen running GPU-heavy apps) on a hidden X display, and saves shot_N.png
 # at each frame in FRAMES (e.g. 30,90). PRESSES like 60:ui_down,70:ui_accept.
@@ -13,8 +13,8 @@ cd "$(dirname "$0")/.."
 sync
 env -u WAYLAND_DISPLAY DISPLAY=$DPY LIBGL_ALWAYS_SOFTWARE=1 GALLIUM_DRIVER=llvmpipe \
   __GLX_VENDOR_LIBRARY_NAME=mesa \
-  godot --display-driver x11 --rendering-driver opengl3 --audio-driver Dummy --path . "$@" \
-  -- --shot="$OUT" --at="$FRAMES" ${PRESSES:+--press=$PRESSES} > "$OUT/godot.log" 2>&1 &
+  godot --display-driver x11 --rendering-driver opengl3 --audio-driver Dummy --path . \
+  -- --shot="$OUT" --at="$FRAMES" ${PRESSES:+--press=$PRESSES} "$@" > "$OUT/godot.log" 2>&1 &
 PID=$!
 for i in $(seq 1 240); do
   kill -0 $PID 2>/dev/null || break

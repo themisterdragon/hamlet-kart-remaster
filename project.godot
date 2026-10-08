@@ -7,7 +7,7 @@ config_version=5
 
 config/name="Hamlet Kart Remaster"
 config/description="A kart racer that teaches Hamlet: right answers are turbo."
-run/main_scene="res://scenes/main.tscn"
+run/main_scene="res://scenes/race.tscn"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 config/icon="res://assets/images/emblem.png"
 
