@@ -3,7 +3,7 @@
 /export/
 /build/
 
-# 22 kHz N64 mixes, brought in by tools/import_content.py; PC-quality audio comes later
-/assets/audio/
+
+
 
 __pycache__/

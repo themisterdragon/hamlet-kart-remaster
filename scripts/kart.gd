@@ -483,8 +483,14 @@ func snap() -> Array:
 	return a
 
 
-## (player) Show the host's state.
+var net_pos := Vector3.INF  # (player) where the host last said this kart was
+var net_yaw := 0.0
+
+
+## (player) Show the host's state; position and heading are smoothed (smooth()).
 func apply(a: Array) -> void:
+	var was := Vector3(x, y, z)
+	var was_yaw := yaw
 	for i in SNAP.size():
 		var k: String = SNAP[i]
 		var v = a[i]
@@ -495,4 +501,30 @@ func apply(a: Array) -> void:
 				set(k, bool(v))
 			_:
 				set(k, float(v))
+	var first := net_pos == Vector3.INF
+	net_pos = Vector3(x, y, z)
+	net_yaw = yaw
+	if not first:  # keep showing where we were; smooth() glides to the new place
+		x = was.x
+		y = was.y
+		z = was.z
+		yaw = was_yaw
+	_place()
+
+
+## (player) Between the host's updates, carry on at the last speed and glide
+## toward it, so 20 updates a second look like smooth driving.
+func smooth(dt: float) -> void:
+	if net_pos == Vector3.INF:
+		return
+	var f := fwd_of(net_yaw)
+	net_pos += Vector3(f.x, 0, f.y) * speed * dt
+	var k := 1 - exp(-dt * 14)
+	var p := Vector3(x, y, z).lerp(net_pos, k)
+	if p.distance_to(net_pos) > 300:  # far off (a respawn): jump
+		p = net_pos
+	x = p.x
+	y = p.y
+	z = p.z
+	yaw += wrapf(net_yaw - yaw, -PI, PI) * k
 	_place()

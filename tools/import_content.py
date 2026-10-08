@@ -5,13 +5,14 @@ Reads tools/content.py from a Hamlet Kart (N64) checkout and writes
 data/content.json; runs its tools/make_data.py track builder and writes the
 same 16 layouts to data/tracks.json (N64 units: road half width 150); then
 copies the fonts, portraits, logo, emblem, kart sprite sheets, item icons and
-road textures into assets/, and the music and sound effects into assets/audio/ (not committed:
-they are 22 kHz N64 mixes, to be replaced by full-quality PC ones).
+road textures into assets/, the sound effects and voices into assets/sound/sfx,
+and the music into assets/sound/music as Ogg Vorbis (ffmpeg), so the web
+build stays small. (They are the N64's 22 kHz mixes for now.)
 
 Usage: python3 -I tools/import_content.py [path to the N64 Hamlet Kart repo]
        (default: ../hamlet-kart-public)
 """
-import importlib.util, json, os, shutil, sys
+import importlib.util, json, os, shutil, subprocess, sys
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 SRC = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "..", "hamlet-kart-public"))
@@ -93,10 +94,16 @@ def main():
         dest = os.path.join(ROOT, "assets", "images", sub)
         shutil.rmtree(dest, ignore_errors=True)
         shutil.copytree(os.path.join(assets, sub), dest)
-    for sub in ("music", "sfx"):
-        dest = os.path.join(ROOT, "assets", "audio", sub)
-        shutil.rmtree(dest, ignore_errors=True)
-        shutil.copytree(os.path.join(assets, sub), dest)
+    sfx = os.path.join(ROOT, "assets", "sound", "sfx")
+    shutil.rmtree(sfx, ignore_errors=True)
+    shutil.copytree(os.path.join(assets, "sfx"), sfx)
+    music = os.path.join(ROOT, "assets", "sound", "music")
+    os.makedirs(music, exist_ok=True)
+    for name in sorted(os.listdir(os.path.join(assets, "music"))):
+        if name.endswith(".wav"):
+            subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", os.path.join(assets, "music", name),
+                            "-map_metadata", "-1", "-c:a", "libvorbis", "-q:a", "4",
+                            os.path.join(music, name[:-4] + ".ogg")], check=True)
 
     nq = sum(len(t["questions"]) for t in data["tracks"])
     print(f"{len(data['tracks'])} tracks, {nq} questions, {len(data['characters'])} characters, "

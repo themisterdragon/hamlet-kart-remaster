@@ -17,6 +17,8 @@ var hello_sent := false
 
 func _ready() -> void:
 	Controls.setup()
+	Sound.race_over()
+	Sound.music("title")
 	var bg := TextureRect.new()
 	bg.texture = load("res://assets/images/title_bg.png")
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -83,7 +85,10 @@ func _button(t: String, on_press: Callable, parent: Node = null) -> Button:
 	b.add_theme_stylebox_override("hover", hi)
 	b.add_theme_stylebox_override("focus", hi)
 	b.add_theme_stylebox_override("pressed", hi)
-	b.pressed.connect(on_press)
+	b.pressed.connect(func():
+		Sound.sfx("select")
+		on_press.call())
+	b.focus_entered.connect(func(): Sound.sfx("move", 1.0, -8))
 	(parent if parent else page).add_child(b)
 	return b
 
@@ -136,7 +141,7 @@ func _characters(next: Callable) -> void:
 		at.region = Rect2(i * 48, 0, 48, 48)
 		var b := _button(c.name, func(): _picked(i), grid)
 		b.icon = at
-		b.expand_icon = false
+		b.expand_icon = true
 		b.add_theme_constant_override("icon_max_width", 96)
 		b.custom_minimum_size = Vector2(380, 130)
 		b.add_theme_font_size_override("font_size", 32)
@@ -147,6 +152,7 @@ func _characters(next: Callable) -> void:
 
 func _picked(ch: int) -> void:
 	Game.my_char = ch
+	Sound.voice(ch, Sound.LINE_SELECT)
 	after_char.call()
 
 

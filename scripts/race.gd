@@ -34,6 +34,7 @@ var online := false
 var remote_in := {}     # (host) peer -> that player's latest controls
 var send_t := 0.0
 var snap: Dictionary    # (player) the latest race state from the host
+var snap_new := false
 var latched := {}       # (player) button presses not sent yet
 
 # items in flight and on the road, and the moving scenery
@@ -109,6 +110,8 @@ func _ready() -> void:
 	cam_yaw = player.yaw
 	_camera(1.0)
 
+	Sound.race_over()
+	Sound.music("act%d" % (int(Content.tracks[track_index].act) + 1))
 	hud = Hud.new()
 	add_child(hud)
 	hud.setup(Content.tracks[track_index], LAPS)
@@ -261,6 +264,7 @@ func _process(delta: float) -> void:
 		# a kart right at the camera (the grid row behind you) would fill the screen
 		k.sprite.visible = k == player or Vector2(k.x - cam.position.x, k.z - cam.position.z).length() > 50
 	hud.show_state(player, countdown, race_time, karts.size())
+	Sound.watch(player, countdown, LAPS, int(Content.tracks[track_index].act))
 	if online:
 		send_t -= dt
 		if send_t <= 0:
@@ -653,6 +657,7 @@ func _net_message(peer: String, d: Dictionary) -> void:
 			remote_in[peer] = pad
 		"s":  # (player) the race as the host sees it
 			snap = d
+			snap_new = true
 		"back":  # (player) the host went back to the lobby
 			get_tree().change_scene_to_file("res://scenes/menu.tscn")
 
@@ -706,7 +711,8 @@ func _client_process(dt: float) -> void:
 		pad.answer = latched.get("answer", -1)
 		latched = {}
 		Net.send(Game.host_peer, {"k": "in", "i": pad})
-	if not snap.is_empty():
+	if snap_new:
+		snap_new = false
 		countdown = snap.cd
 		race_time = snap.t
 		for i in karts.size():
@@ -717,6 +723,12 @@ func _client_process(dt: float) -> void:
 		for i in boxes.size():
 			boxes[i].node.visible = (int(snap.bx) >> i) & 1 == 0
 		_show_items(snap.ps, snap.ds)
+	else:
+		countdown = maxf(countdown - dt, 0) if countdown > 0 else countdown
+		if countdown <= 0:
+			race_time += dt
+	for k in karts:
+		k.smooth(dt)
 	var spin := race_time * 1.6
 	for b in boxes:
 		b.node.get_child(0).rotation = Vector3(spin * 0.6, spin, 0)
@@ -730,6 +742,7 @@ func _client_process(dt: float) -> void:
 		if finished_t > 2.0 and not hud.results_up:
 			hud.show_results(karts, player)
 	hud.show_state(player, countdown, race_time, karts.size())
+	Sound.watch(player, countdown, LAPS, int(Content.tracks[track_index].act))
 
 
 var _shown: Array = []  # (player) sprites for items in flight and on the road

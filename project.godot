@@ -21,6 +21,7 @@ Content="*res://scripts/content.gd"
 DevShot="*res://scripts/dev_shot.gd"
 Game="*res://scripts/game.gd"
 Net="*res://scripts/net.gd"
+Sound="*res://scripts/sound.gd"
 
 [display]
 
