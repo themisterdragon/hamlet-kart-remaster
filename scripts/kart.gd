@@ -462,8 +462,8 @@ func _place() -> void:
 func face(cam: Vector3) -> void:
 	if model:
 		var t := Time.get_ticks_msec() / 1000.0
-		# (+PI: the sculpts face +z, Godot models face -z)
-		model.rotation = Vector3(0, yaw + PI + slide * 0.35 + spin_t * 14, steer * 0.12 * clampf(speed / 300, 0, 1))
+		# (the sculpts face +z, the same way yaw 0 drives)
+		model.rotation = Vector3(0, yaw + slide * 0.35 + spin_t * 14, -steer * 0.12 * clampf(speed / 300, 0, 1))
 		var bob := 0.0 if hop > 0 else sin(t * 22 + ch) * clampf(absf(speed) / 300, 0, 1) * 0.6
 		model.position.y = bob
 		model.scale = Vector3(1.15, 0.6, 1.15) if nap_t > 0 else Vector3.ONE
