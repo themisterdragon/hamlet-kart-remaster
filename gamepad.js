@@ -1,14 +1,24 @@
-// Some browsers report controllers they don't know (Firefox on Linux, or
-// Chrome on Android with a pad like the AYN Thor's) in a raw layout instead
-// of the "standard" one the game understands: the
-// D-pad and triggers come as axes, and the buttons in kernel order. This
-// remaps those pads to the standard layout before the game reads them.
+// Some browsers report controllers they don't know without calling them
+// "standard": Firefox on Linux gives the raw Linux layout (D-pad and
+// triggers as axes, buttons in kernel order), which this remaps; Chrome on
+// Android (the AYN Thor, say) already uses the standard order and only
+// needs the label.
 (() => {
   const raw = navigator.getGamepads.bind(navigator);
   const btn = (v) => ({ pressed: v > 0.5, touched: v > 0.05, value: v });
   const val = (b) => (b ? (typeof b === "object" ? b.value : b) : 0);
+  const android = /Android/i.test(navigator.userAgent);
   function remap(p) {
     const b = p.buttons, a = p.axes;
+    if (android) {
+      // Chrome on Android lays out every pad in the standard order (D-pad on
+      // 12-15, as on the AYN Thor); it just doesn't call it "standard"
+      return {
+        id: p.id, index: p.index, connected: p.connected, timestamp: p.timestamp, mapping: "standard",
+        buttons: Array.from(b, (x) => btn(val(x))), axes: Array.from(a).slice(0, 4),
+        vibrationActuator: p.vibrationActuator, hapticActuators: p.hapticActuators,
+      };
+    }
     const sony = /054c|sony|playstation|dualsense|dualshock/i.test(p.id);
     // Linux orders face buttons south, east, north, west; Sony's driver puts
     // Triangle on north and Square on west, Xbox's driver the other way round
