@@ -1,6 +1,7 @@
 class_name Props
-## Stand-in scenery: simple shapes in each prop's colours, N64 units.
-## Milestone 2 replaces these with real models; the names match the N64's.
+## Scenery: the sculpted clay props (assets/models/props, from
+## tools/sculpt_props.py) where there is one, else a simple stand-in shape
+## in the prop's colours. World units; the names match the N64's.
 
 const COLOURS := {
 	"PINE": "2f5d34", "SNOWPINE": "dfe8f0", "TOWER": "8a8a94", "TORCH": "ffb040",
@@ -47,7 +48,18 @@ static func _box(x: float, y: float, z: float) -> BoxMesh:
 	return b
 
 
+static var _scenes := {}
+
+
 static func make(name: String, _theme: Dictionary) -> Node3D:
+	var path := "res://assets/models/props/%s.glb" % name.to_lower()
+	if ResourceLoader.exists(path):
+		if not _scenes.has(path):
+			_scenes[path] = load(path)
+		var m: Node3D = _scenes[path].instantiate()
+		for mi in m.find_children("*", "MeshInstance3D", true, false):
+			mi.material_override = Cast.clay()
+		return m
 	var root := Node3D.new()
 	root.name = name.capitalize()
 	var c: String = COLOURS.get(name, "888888")

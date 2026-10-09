@@ -4,17 +4,23 @@ sculpts (tools/characters.py there), meshed by tools/sdfmesh and written as
 assets/models/cNN.glb with vertex colours (the clay's own colours).
 
 Usage: python3 -I tools/make_models.py [N64 repo] [cell size] [characters...]
-       (default ../hamlet-kart-public, cell 0.4, all eight)
+       (default ../hamlet-kart-public, cell 0.7, all eight)
+       python3 -I tools/make_models.py props [names...]
+       (the scenery from tools/sculpt_props.py into assets/models/props/)
 Model space: the kart faces +z, wheels on y = 0, in world units.
 """
 import importlib.util, json, os, struct, subprocess, sys, tempfile
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-SRC = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "..", "hamlet-kart-public"))
-CELL = float(sys.argv[2]) if len(sys.argv) > 2 else 0.4
-ONLY = [int(a) for a in sys.argv[3:]]
+PROPS = len(sys.argv) > 1 and sys.argv[1] == "props"
+ARGS = [] if PROPS else sys.argv[1:]
+SRC = os.path.abspath(ARGS[0] if ARGS else os.path.join(ROOT, "..", "hamlet-kart-public"))
+CELL = float(ARGS[1]) if len(ARGS) > 1 else 0.7
+ONLY = [int(a) for a in ARGS[2:]]
+ONLY_PROPS = sys.argv[2:] if PROPS else []
 EXE = os.path.join(ROOT, "build", "sdfmesh")
 OUT = os.path.join(ROOT, "assets", "models")
+LANDMARKS = {"TOWER", "CHAPEL", "STAGE", "SHIP", "THRONE", "WILLOW", "SKULLS", "GHOST"}
 
 
 def build_tool():
@@ -24,11 +30,11 @@ def build_tool():
         subprocess.run(["gcc", "-O2", "-fopenmp", "-o", EXE, src, "-lm"], check=True)
 
 
-def mesh(scene):
+def mesh(scene, cell=None):
     with tempfile.TemporaryDirectory() as tmp:
         sc, out = os.path.join(tmp, "scene.txt"), os.path.join(tmp, "mesh.bin")
         scene.write(sc)
-        subprocess.run([EXE, sc, out, str(CELL)], check=True)
+        subprocess.run([EXE, sc, out, str(cell or CELL)], check=True, stderr=subprocess.DEVNULL)
         data = open(out, "rb").read()
     nv, nt = struct.unpack_from("<ii", data)
     verts = struct.unpack_from("<%df" % (10 * nv), data, 8)
@@ -88,6 +94,25 @@ def main():
     spec = importlib.util.spec_from_file_location("hk_characters", os.path.join(SRC, "tools", "characters.py"))
     chars = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(chars)
+    if PROPS:
+        sys.path.insert(0, os.path.join(ROOT, "tools"))
+        import sculpt_props
+        out = os.path.join(OUT, "props")
+        os.makedirs(out, exist_ok=True)
+        for name, (scene, cell) in sculpt_props.props(chars.Scene).items():
+            if ONLY_PROPS and name not in ONLY_PROPS:
+                continue
+            # a triangle budget: scenery is many and far away; the grid is
+            # coarsened until the prop fits (triangles go with 1/cell^2)
+            budget = {"CASTLE": 20000}.get(name, 8000 if name in LANDMARKS else 4000)
+            nv, nt, verts, tris = mesh(scene, cell)
+            while nt > budget * 1.15:
+                cell *= (nt / budget) ** 0.5
+                nv, nt, verts, tris = mesh(scene, cell)
+            path = os.path.join(out, name.lower() + ".glb")
+            write_glb(path, nv, nt, verts, tris)
+            print(f"{name}: {nt} triangles (cell {cell:.2f}), {os.path.getsize(path) // 1024} KB")
+        return
     os.makedirs(OUT, exist_ok=True)
     for i, scene in chars.characters().items():
         if ONLY and i not in ONLY:
