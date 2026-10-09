@@ -27,8 +27,8 @@ func _ready() -> void:
 	# name, icon, label, action, radius
 	for b in [
 		["left", "◀", "LEFT", "p0_left", 125.0], ["right", "▶", "RIGHT", "p0_right", 125.0],
-		["gas", "▲", "GAS", "p0_gas", 140.0], ["brake", "▼", "BRAKE", "p0_brake", 92.0],
-		["drift", "⭮", "DRIFT", "p0_drift", 105.0], ["item", "★", "ITEM", "p0_item", 98.0],
+		["gas", "▲", "GAS", "p0_gas", 150.0], ["brake", "▼", "BRAKE", "p0_brake", 100.0],
+		["drift", "⭮", "DRIFT", "p0_drift", 100.0], ["item", "★", "ITEM", "p0_item", 100.0],
 		["pause", "II", "PAUSE", "ui_cancel", 62.0],
 	]:
 		_make(b[0], b[1], b[2], b[3], b[4])
@@ -100,10 +100,12 @@ func _disc(r: float, pressed: bool) -> Texture2D:
 
 func _layout() -> void:
 	var s := get_viewport().get_visible_rect().size
+	# left thumb: steering, with drift and items just above it; right
+	# thumb: gas, with the brake above; pause up top
 	var at := {
 		"left": Vector2(175, s.y - 185), "right": Vector2(455, s.y - 185),
-		"gas": Vector2(s.x - 195, s.y - 200), "brake": Vector2(s.x - 175, s.y - 505),
-		"drift": Vector2(s.x - 470, s.y - 140), "item": Vector2(s.x - 440, s.y - 380),
+		"drift": Vector2(205, s.y - 440), "item": Vector2(430, s.y - 440),
+		"gas": Vector2(s.x - 205, s.y - 210), "brake": Vector2(s.x - 205, s.y - 480),
 		"pause": Vector2(s.x - 90, 165),
 	}
 	for p in pads:
@@ -117,3 +119,11 @@ func _input(event: InputEvent) -> void:
 	elif (event is InputEventKey or event is InputEventJoypadButton) and event.is_pressed() and Controls.touch_mode:
 		Controls.touch_mode = false
 		visible = false
+
+
+## Driving buttons hide while a question is up (the kart drives itself and
+## the answers need the room); pause stays.
+func set_driving(on: bool) -> void:
+	for p in pads:
+		if p.name != "pause":
+			p.button.visible = on

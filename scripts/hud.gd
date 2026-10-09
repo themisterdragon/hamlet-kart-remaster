@@ -20,6 +20,10 @@ var panel: PanelContainer
 var q_label: Label
 var a_labels: Array[Label] = []
 var a_arrows: Array[DpadArrow] = []
+var a_cells: Array[PanelContainer] = []
+const BOX_IDLE := Color("1b2448")
+const BOX_RIGHT := Color("1e7a3c")   # white text on it: 5.4:1
+const BOX_WRONG := Color("a8323a")   # white text on it: 6.3:1
 var shown_q := ""
 var touch_layout := false  # place moved clear of the touch buttons
 var results_up := false
@@ -97,53 +101,59 @@ func setup(content_track: Dictionary, lap_count: int) -> void:
 		card.add_child(l)
 	root.add_child(card)
 
-	# the quiz panel: see-through, bottom centre; answers sit like the D-pad
+	# the quiz: the question, then each answer in its own box, laid out like
+	# the D-pad (up, left, right, down). The kart drives itself meanwhile, so
+	# it can take room; it sits clear of the screen's bottom edge (phones'
+	# home bars) and the boxes are big enough to tap.
 	panel = PanelContainer.new()
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.06, 0.08, 0.16, 0.62)
-	sb.set_corner_radius_all(18)
-	sb.content_margin_left = 36
-	sb.content_margin_right = 36
-	sb.content_margin_top = 14
-	sb.content_margin_bottom = 14
+	sb.bg_color = Color(0.06, 0.08, 0.16, 0.7)
+	sb.set_corner_radius_all(22)
+	sb.set_content_margin_all(22)
 	panel.add_theme_stylebox_override("panel", sb)
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 2)
-	q_label = _label(body, 36, Color.WHITE)
+	box.add_theme_constant_override("separation", 14)
+	q_label = _label(body, 40, Color.WHITE)
 	q_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	q_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	q_label.custom_minimum_size.x = 900
+	q_label.custom_minimum_size.x = 1100
 	box.add_child(q_label)
 	var grid := GridContainer.new()
 	grid.columns = 3
-	grid.add_theme_constant_override("h_separation", 24)
-	var rows: Array[HBoxContainer] = []
+	grid.add_theme_constant_override("h_separation", 16)
+	grid.add_theme_constant_override("v_separation", 10)
+	var cells_by_slot: Array[Control] = []
 	for i in 4:
-		var row := HBoxContainer.new()
-		row.mouse_filter = Control.MOUSE_FILTER_STOP  # tap an answer (phones)
-		row.gui_input.connect(func(e: InputEvent):
+		var cell := PanelContainer.new()
+		cell.custom_minimum_size = Vector2(470, 120)  # (about 50 points tall on a phone)
+		cell.mouse_filter = Control.MOUSE_FILTER_STOP  # tap an answer (phones)
+		cell.gui_input.connect(func(e: InputEvent):
 			if e is InputEventMouseButton and e.pressed:
 				Controls.touch.answer = i)
+		cell.pivot_offset = Vector2(235, 60)
+		var row := HBoxContainer.new()
 		row.alignment = BoxContainer.ALIGNMENT_CENTER
-		row.custom_minimum_size = Vector2(280, 0)
-		row.add_theme_constant_override("separation", 10)
-		var arrow := DpadArrow.new(i, 22)
-		var a := _label(body, 32, Color.WHITE)
+		row.add_theme_constant_override("separation", 12)
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var arrow := DpadArrow.new(i, 30)
+		var a := _label(body, 40, Color.WHITE)
+		a.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(arrow)
 		row.add_child(a)
+		cell.add_child(row)
 		a_arrows.append(arrow)
 		a_labels.append(a)
-		rows.append(row)
+		a_cells.append(cell)
+		cells_by_slot.append(cell)
 	# up / left, right / down, in a diamond
-	var cells := [null, rows[0], null, rows[3], null, rows[1], null, rows[2], null]
+	var cells := [null, cells_by_slot[0], null, cells_by_slot[3], null, cells_by_slot[1], null, cells_by_slot[2], null]
 	for c in cells:
 		grid.add_child(c if c else Control.new())
 	box.add_child(grid)
 	panel.add_child(box)
 	panel.visible = false
 	root.add_child(panel)
-	# bottom centre, just its own size, below the player's kart
-	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 24)
+	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 150)
 	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
 
@@ -226,21 +236,34 @@ func show_state(k: Kart, countdown: float, time: float, racers: int) -> void:
 	if shown_q != k.question.q:
 		shown_q = k.question.q
 		q_label.text = k.question.q
+		for c in a_cells:  # the boxes pop in
+			c.scale = Vector2(0.6, 0.6)
+			create_tween().tween_property(c, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	for i in 4:
 		var mark := ""
-		var col := Color.WHITE
+		var fill := BOX_IDLE
+		var text := Color.WHITE
+		var edge := Color("f2c94c")
 		if not k.asking:  # the verdict: the right answer always shows, with a tick
 			if i == k.question.correct:
 				mark = "  ✓"
-				col = Color("6fdc8c")
+				fill = BOX_RIGHT
 			elif i == k.answered:
 				mark = "  ✗"
-				col = Color("ff8a80")
+				fill = BOX_WRONG
 			else:
-				col = Color(1, 1, 1, 0.45)
+				text = Color("b8bcc8")  # set aside, still readable (9:1)
+				edge = Color("3a4060")
 		a_labels[i].text = "%s%s" % [k.question.answers[i], mark]
-		a_labels[i].add_theme_color_override("font_color", col)
-		a_arrows[i].color = col
+		a_labels[i].add_theme_color_override("font_color", text)
+		a_arrows[i].color = text
+		var st := StyleBoxFlat.new()
+		st.bg_color = fill
+		st.border_color = edge
+		st.set_border_width_all(4)
+		st.set_corner_radius_all(18)
+		st.set_content_margin_all(12)
+		a_cells[i].add_theme_stylebox_override("panel", st)
 
 
 func _show_overlay(text: String, choices: Array = []) -> void:

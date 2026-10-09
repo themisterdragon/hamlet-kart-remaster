@@ -28,6 +28,7 @@ var cam: Camera3D
 var cam_yaw := 0.0
 var cam_boost := 0.0
 var hud: Hud
+var touch: TouchControls
 var env: Environment
 var sun: DirectionalLight3D
 var perf_frames := 0     # frames counted during the countdown, to judge this computer
@@ -124,7 +125,8 @@ func _ready() -> void:
 	hud = Hud.new()
 	add_child(hud)
 	hud.choice.connect(_choice)
-	add_child(TouchControls.new())
+	touch = TouchControls.new()
+	add_child(touch)
 	hud.setup(Content.tracks[track_index], LAPS)
 
 
@@ -316,6 +318,7 @@ func _process(delta: float) -> void:
 		elif near:
 			k.model.visible = false
 	hud.show_state(player, countdown, race_time, karts.size())
+	touch.set_driving(not (player.asking or player.verdict_t > 0))
 	Sound.watch(player, countdown, LAPS, int(Content.tracks[track_index].act))
 	if online:
 		send_t -= dt
@@ -797,6 +800,7 @@ func _client_process(dt: float) -> void:
 		if finished_t > 2.0 and not hud.results_up:
 			hud.show_results(karts, player)
 	hud.show_state(player, countdown, race_time, karts.size())
+	touch.set_driving(not (player.asking or player.verdict_t > 0))
 	Sound.watch(player, countdown, LAPS, int(Content.tracks[track_index].act))
 
 
