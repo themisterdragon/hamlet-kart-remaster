@@ -21,7 +21,7 @@ with Vulkan.
 - `tools/import_content.py`: N64 content → `data/content.json`, plus fonts and images.
 - Content autoload and a quiz test screen at 1080p.
 
-## Milestone 1: faithful port (in progress)
+## Milestone 1: faithful port (done except split screen; demo 0.3)
 Same look as the N64 (kart sprites, the same tracks), at high resolution and 60 fps.
 
 Done so far (Act III's "To Be or Not to Be" by default; `-- --track=N` for others):
@@ -45,7 +45,7 @@ Test runs: `tools/shot.sh` (software rendering, hidden display).
 8. Saves: best times per track and class (user folder; browser storage on web).
 9. Exports: Windows, Mac, Linux, Web.
 
-## Milestone 1.5: online class races (join code, up to 8 players)
+## Milestone 1.5: online class races (done: PeerJS, join code, up to 8 players)
 Students race each other from their own browsers or PCs: one machine hosts
 and shows a short join code, up to 8 players enter it and pick characters,
 CPUs fill the empty karts. Host-authoritative (the host runs the race,
