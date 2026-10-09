@@ -12,8 +12,7 @@ const DIRS := ["up", "right", "down", "left"]  # answer slots, as the D-pad
 static var _ready := false
 # touch controls (scripts/touch.gd): on after a touch, off after keys or a pad
 static var touch_mode := OS.has_feature("web_android") or OS.has_feature("web_ios")
-static var touch := {"stick": 0.0, "stick_y": 0.0, "brake": false, "drift_press": false, "drift_held": false,
-	"item": false, "item_held": false, "answer": -1}
+static var touch := {"answer": -1}  # (the touch buttons press the normal actions)
 
 
 static func setup() -> void:
@@ -85,23 +84,9 @@ static func read(p: int) -> Dictionary:
 		"item_held": Input.is_action_pressed(pre + "item"),
 		"answer": answer,
 	}
-	if p == 0 and touch_mode:  # gas is automatic on touch; the brake holds it back
-		var t := touch
-		if absf(t.stick) > absf(pad.stick):
-			pad.stick = t.stick
-		if absf(t.stick_y) > absf(pad.stick_y):
-			pad.stick_y = t.stick_y
-		pad.gas = not t.brake
-		pad.brake = pad.brake or t.brake
-		pad.drift_press = pad.drift_press or t.drift_press
-		pad.drift_held = pad.drift_held or t.drift_held
-		pad.item = pad.item or t.item
-		pad.item_held = pad.item_held or t.item_held
-		if t.answer >= 0:
-			pad.answer = t.answer
-		t.drift_press = false  # presses count once
-		t.item = false
-		t.answer = -1
+	if p == 0 and touch.answer >= 0:  # an answer tapped in the quiz panel (phones)
+		pad.answer = touch.answer
+		touch.answer = -1
 	return pad
 
 

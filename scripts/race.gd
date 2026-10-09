@@ -124,11 +124,7 @@ func _ready() -> void:
 	hud = Hud.new()
 	add_child(hud)
 	hud.choice.connect(_choice)
-	var touch := TouchControls.new()
-	touch.pause_pressed.connect(func():
-		if not online and not hud.results_up:
-			_pause(not get_tree().paused))
-	add_child(touch)
+	add_child(TouchControls.new())
 	hud.setup(Content.tracks[track_index], LAPS)
 
 

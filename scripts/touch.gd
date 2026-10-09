@@ -1,123 +1,119 @@
 class_name TouchControls
 extends CanvasLayer
-## Phone and tablet controls: a thumbstick on the left half (put a thumb
-## down anywhere and slide), automatic gas, and Drift, Item and Brake on
-## the right. Shown after the first touch; hidden again by keys or a pad.
-## Quiz answers are tapped in the quiz panel (scripts/hud.gd).
+## Phone and tablet controls: Godot's multi-touch buttons press the same
+## actions as the keyboard and gamepad, so steering, gas (and the rocket
+## start), drift, items and pause all work the same way. Shown after the
+## first touch; hidden again by keys or a pad. Quiz answers are tapped in
+## the quiz panel (scripts/hud.gd).
+##
+## Accessible by design: large targets (the smallest is about 2x the 44 px
+## minimum on a phone), white text on solid navy (over 12:1), a gold rim
+## that stands out on any road, a text label on every button, and a
+## pressed state shown by fill and size, not by colour alone.
 
-signal pause_pressed
+const NAVY := Color("141a33")
+const GOLD := Color("f2c94c")
+const PRESSED := Color("f2c94c")
 
-const STICK_RANGE := 110.0  # pixels of slide for full lock (in the 1920x1080 layout)
-
-var stick_id := -1          # the finger on the stick
-var stick_origin := Vector2.ZERO
-var stick_now := Vector2.ZERO
-var held := {}              # button name -> finger
-var buttons := {}           # button name -> {centre, radius, label}
-var root: Control
+var root: Node2D
+var pads: Array = []  # [{button, label, name, radius}]
+var font: Font = load("res://assets/fonts/LilitaOne-Regular.ttf")
 
 
 func _ready() -> void:
 	layer = 5
-	root = Control.new()
-	root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.draw.connect(_draw_controls)
+	root = Node2D.new()
 	add_child(root)
+	# name, icon, label, action, radius
+	for b in [
+		["left", "◀", "LEFT", "p0_left", 125.0], ["right", "▶", "RIGHT", "p0_right", 125.0],
+		["gas", "▲", "GAS", "p0_gas", 140.0], ["brake", "▼", "BRAKE", "p0_brake", 92.0],
+		["drift", "⭮", "DRIFT", "p0_drift", 105.0], ["item", "★", "ITEM", "p0_item", 98.0],
+		["pause", "II", "PAUSE", "ui_cancel", 62.0],
+	]:
+		_make(b[0], b[1], b[2], b[3], b[4])
 	visible = Controls.touch_mode
 	get_viewport().size_changed.connect(_layout)
 	_layout()
 
 
+func _make(name: String, icon: String, text: String, action: String, r: float) -> void:
+	var tb := TouchScreenButton.new()
+	tb.texture_normal = _disc(r, false)
+	tb.texture_pressed = _disc(r, true)
+	var shape := CircleShape2D.new()
+	shape.radius = r * 1.1  # a little forgiving at the edges
+	tb.shape = shape
+	tb.shape_centered = true
+	tb.action = action
+	tb.passby_press = name in ["left", "right"]  # slide a thumb between the steering buttons
+	# a big icon over a clear word (the word is the label, never the icon alone)
+	var box := VBoxContainer.new()
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.size = Vector2(r * 2, r * 2)
+	box.add_theme_constant_override("separation", -int(r * 0.08))
+	tb.add_child(box)
+	var labels: Array[Label] = []
+	for part in ([[icon, 0.62], [text, 0.27]] if r > 70 else [[icon, 0.7]]):
+		var l := Label.new()
+		l.text = part[0]
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		l.add_theme_font_override("font", font)
+		l.add_theme_font_size_override("font_size", int(r * part[1]))
+		l.add_theme_color_override("font_color", Color.WHITE)
+		box.add_child(l)
+		labels.append(l)
+	var label := labels
+	tb.pressed.connect(func(): _press(label, true))
+	tb.released.connect(func(): _press(label, false))
+	root.add_child(tb)
+	pads.append({"button": tb, "labels": label, "name": name, "radius": r})
+
+
+func _press(labels: Array[Label], down: bool) -> void:
+	for l in labels:
+		l.add_theme_color_override("font_color", NAVY if down else Color.WHITE)
+
+
+## A round button face: navy with a gold rim; pressed, gold and a touch smaller.
+func _disc(r: float, pressed: bool) -> Texture2D:
+	var n := int(r * 2)
+	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
+	var c := Vector2(r, r)
+	var rim := maxf(6.0, r * 0.07)
+	var shrink := r * 0.06 if pressed else 0.0
+	for y in n:
+		for x in n:
+			var d := Vector2(x + 0.5, y + 0.5).distance_to(c) + shrink
+			var a := clampf(r - d, 0, 1)  # antialiased edge
+			if a <= 0:
+				continue
+			var col: Color
+			if d > r - rim:
+				col = GOLD if not pressed else Color.WHITE
+			else:
+				col = PRESSED if pressed else NAVY
+				col.a = 1.0  # solid, so the button never blends into a dark road
+			img.set_pixel(x, y, Color(col.r, col.g, col.b, col.a * a))
+	return ImageTexture.create_from_image(img)
+
+
 func _layout() -> void:
-	var s := root.get_viewport_rect().size
-	buttons = {
-		"drift": {"c": Vector2(s.x - 170, s.y - 190), "r": 105.0, "t": "DRIFT"},
-		"item": {"c": Vector2(s.x - 380, s.y - 120), "r": 85.0, "t": "ITEM"},
-		"brake": {"c": Vector2(s.x - 140, s.y - 420), "r": 70.0, "t": "BRAKE"},
-		"pause": {"c": Vector2(s.x - 80, 150), "r": 46.0, "t": "II"},
+	var s := get_viewport().get_visible_rect().size
+	var at := {
+		"left": Vector2(175, s.y - 185), "right": Vector2(455, s.y - 185),
+		"gas": Vector2(s.x - 195, s.y - 200), "brake": Vector2(s.x - 175, s.y - 505),
+		"drift": Vector2(s.x - 470, s.y - 140), "item": Vector2(s.x - 440, s.y - 380),
+		"pause": Vector2(s.x - 90, 165),
 	}
-
-
-func _hit(pos: Vector2) -> String:
-	for name in buttons:
-		if pos.distance_to(buttons[name].c) <= buttons[name].r * 1.15:
-			return name
-	return ""
+	for p in pads:
+		p.button.position = at[p.name] - Vector2(p.radius, p.radius)
 
 
 func _input(event: InputEvent) -> void:
-	if event is InputEventScreenTouch or event is InputEventScreenDrag:
-		if not Controls.touch_mode:
-			Controls.touch_mode = true
-			visible = true
-	elif (event is InputEventKey or event is InputEventJoypadButton) and event.is_pressed():
+	if event is InputEventScreenTouch and event.pressed and not Controls.touch_mode:
+		Controls.touch_mode = true
+		visible = true
+	elif (event is InputEventKey or event is InputEventJoypadButton) and event.is_pressed() and Controls.touch_mode:
 		Controls.touch_mode = false
 		visible = false
-		_release_all()
-		return
-	if not visible:
-		return
-	var pos: Vector2 = event.position if (event is InputEventScreenTouch or event is InputEventScreenDrag) else Vector2.ZERO
-	if event is InputEventScreenTouch:
-		if event.pressed:
-			var b := _hit(pos)
-			if b == "pause":
-				pause_pressed.emit()
-			elif b != "":
-				held[b] = event.index
-				if b == "drift":
-					Controls.touch.drift_press = true
-				elif b == "item":
-					Controls.touch.item = true
-			elif pos.x < root.get_viewport_rect().size.x * 0.45 and stick_id < 0:
-				stick_id = event.index
-				stick_origin = pos
-				stick_now = pos
-		else:
-			if event.index == stick_id:
-				stick_id = -1
-			for b in held.keys():
-				if held[b] == event.index:
-					held.erase(b)
-		_sync()
-	elif event is InputEventScreenDrag and event.index == stick_id:
-		stick_now = pos
-		_sync()
-
-
-func _release_all() -> void:
-	stick_id = -1
-	held.clear()
-	_sync()
-
-
-func _sync() -> void:
-	var t: Dictionary = Controls.touch
-	t.stick = clampf((stick_now.x - stick_origin.x) / STICK_RANGE, -1, 1) if stick_id >= 0 else 0.0
-	t.stick_y = clampf((stick_origin.y - stick_now.y) / STICK_RANGE, -1, 1) if stick_id >= 0 else 0.0
-	t.drift_held = held.has("drift")
-	t.item_held = held.has("item")
-	t.brake = held.has("brake")
-	root.queue_redraw()
-
-
-func _draw_controls() -> void:
-	var font: Font = load("res://assets/fonts/LilitaOne-Regular.ttf")
-	for name in buttons:
-		var b: Dictionary = buttons[name]
-		var on := held.has(name)
-		root.draw_circle(b.c, b.r, Color(0.06, 0.08, 0.16, 0.55 if not on else 0.8))
-		root.draw_arc(b.c, b.r, 0, TAU, 48, Color("f2c94c"), 5 if not on else 8, true)
-		var size := 34 if b.r > 60 else 28
-		var w := font.get_string_size(b.t, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
-		root.draw_string(font, b.c + Vector2(-w / 2, size * 0.35), b.t, HORIZONTAL_ALIGNMENT_LEFT, -1, size, Color.WHITE)
-	if stick_id >= 0:
-		root.draw_arc(stick_origin, STICK_RANGE, 0, TAU, 48, Color(1, 1, 1, 0.5), 4, true)
-		var knob := stick_origin + (stick_now - stick_origin).limit_length(STICK_RANGE)
-		root.draw_circle(knob, 46, Color(0.95, 0.79, 0.3, 0.75))
-	else:
-		var hint := Vector2(240, root.get_viewport_rect().size.y - 200)
-		root.draw_arc(hint, 80, 0, TAU, 48, Color(1, 1, 1, 0.25), 4, true)
-		var w := font.get_string_size("STEER", HORIZONTAL_ALIGNMENT_LEFT, -1, 28).x
-		root.draw_string(font, hint + Vector2(-w / 2, 10), "STEER", HORIZONTAL_ALIGNMENT_LEFT, -1, 28, Color(1, 1, 1, 0.45))
