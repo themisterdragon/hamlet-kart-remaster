@@ -1,3 +1,12 @@
-<!doctype html><meta charset="utf-8"><title>Hamlet Kart</title>
-<meta http-equiv="refresh" content="0; url=game-d152188.html">
-<a href="game-d152188.html">Play Hamlet Kart</a>
+<!doctype html><html lang="en"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hamlet Kart</title>
+<body style="background:#1b2440;color:#fff;font:20px sans-serif;text-align:center;padding-top:20vh">
+<p id="m">Loading Hamlet Kart...</p>
+<script>
+fetch("latest.txt?" + Date.now(), { cache: "no-store" })
+  .then((r) => r.text())
+  .then((b) => location.replace("game-" + b.trim() + ".html" + location.search))
+  .catch(() => { document.getElementById("m").textContent = "Couldn't load the game. Please reload the page."; });
+</script>
+</body></html>
