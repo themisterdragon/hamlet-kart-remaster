@@ -112,6 +112,17 @@ func _title() -> void:
 	logo.custom_minimum_size = Vector2(900, 300)
 	logo.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	page.add_child(logo)
+	var build := FileAccess.get_file_as_string("res://data/build.txt").strip_edges()
+	if build != "":  # which build this is, to tell old cached copies apart
+		var v := Label.new()
+		v.text = "build " + build
+		v.add_theme_font_override("font", body)
+		v.add_theme_font_size_override("font_size", 22)
+		v.add_theme_color_override("font_color", Color(1, 1, 1, 0.5))
+		v.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, 16)
+		v.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+		v.grow_vertical = Control.GROW_DIRECTION_BEGIN
+		add_child(v)
 	_button("Solo Race", func(): _characters(_tracks))
 	if Net.available():
 		_button("Host a Class Race", func():

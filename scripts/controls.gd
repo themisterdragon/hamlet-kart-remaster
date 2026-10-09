@@ -10,6 +10,10 @@ const DIRS := ["up", "right", "down", "left"]  # answer slots, as the D-pad
 
 
 static var _ready := false
+# touch controls (scripts/touch.gd): on after a touch, off after keys or a pad
+static var touch_mode := OS.has_feature("web_android") or OS.has_feature("web_ios")
+static var touch := {"stick": 0.0, "stick_y": 0.0, "brake": false, "drift_press": false, "drift_held": false,
+	"item": false, "item_held": false, "answer": -1}
 
 
 static func setup() -> void:
@@ -70,7 +74,7 @@ static func read(p: int) -> Dictionary:
 		var act: String = pre + ["up", "right_a", "down", "left_a"][i]
 		if Input.is_action_just_pressed(act):
 			answer = i
-	return {
+	var pad := {
 		"stick": Input.get_axis(pre + "left", pre + "right"),
 		"gas": Input.is_action_pressed(pre + "gas"),
 		"brake": Input.is_action_pressed(pre + "brake"),
@@ -81,6 +85,24 @@ static func read(p: int) -> Dictionary:
 		"item_held": Input.is_action_pressed(pre + "item"),
 		"answer": answer,
 	}
+	if p == 0 and touch_mode:  # gas is automatic on touch; the brake holds it back
+		var t := touch
+		if absf(t.stick) > absf(pad.stick):
+			pad.stick = t.stick
+		if absf(t.stick_y) > absf(pad.stick_y):
+			pad.stick_y = t.stick_y
+		pad.gas = not t.brake
+		pad.brake = pad.brake or t.brake
+		pad.drift_press = pad.drift_press or t.drift_press
+		pad.drift_held = pad.drift_held or t.drift_held
+		pad.item = pad.item or t.item
+		pad.item_held = pad.item_held or t.item_held
+		if t.answer >= 0:
+			pad.answer = t.answer
+		t.drift_press = false  # presses count once
+		t.item = false
+		t.answer = -1
+	return pad
 
 
 ## A short rumble on every connected pad (player 1's pad may be any of them).
@@ -91,6 +113,8 @@ static func rumble(weak: float, strong: float, seconds: float) -> void:
 
 ## "ps", "xbox" or "keys": which button names to show.
 static func style() -> String:
+	if touch_mode:
+		return "touch"
 	var pads := Input.get_connected_joypads()
 	if pads.is_empty():
 		return "keys"
@@ -104,11 +128,11 @@ static func style() -> String:
 ## The button to press for a job, in the player's controller's own names.
 static func glyph(job: String) -> String:
 	var g := {
-		"accept": {"ps": "✕", "xbox": "A", "keys": "Enter"},
-		"back": {"ps": "○", "xbox": "B", "keys": "Esc"},
-		"restart": {"ps": "△", "xbox": "Y", "keys": "R"},
-		"pause": {"ps": "Options", "xbox": "Menu", "keys": "Esc"},
-		"menu": {"ps": "Create", "xbox": "View", "keys": "M"},
+		"accept": {"ps": "✕", "xbox": "A", "keys": "Enter", "touch": "Tap"},
+		"back": {"ps": "○", "xbox": "B", "keys": "Esc", "touch": "Back"},
+		"restart": {"ps": "△", "xbox": "Y", "keys": "R", "touch": "Tap"},
+		"pause": {"ps": "Options", "xbox": "Menu", "keys": "Esc", "touch": "II"},
+		"menu": {"ps": "Create", "xbox": "View", "keys": "M", "touch": "Tap"},
 	}
 	return g[job][style()]
 

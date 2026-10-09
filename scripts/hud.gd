@@ -21,12 +21,15 @@ var q_label: Label
 var a_labels: Array[Label] = []
 var a_arrows: Array[DpadArrow] = []
 var shown_q := ""
+var touch_layout := false  # place moved clear of the touch buttons
 var results_up := false
 var item_box: PanelContainer
 var item_icon: TextureRect
 var item_tex: Array[Texture2D] = []
 var overlay: PanelContainer
 var overlay_text: Label
+var overlay_buttons: HBoxContainer
+signal choice(what: String)  # a tapped overlay button: resume, restart, next, menu, lobby
 
 
 func setup(content_track: Dictionary, lap_count: int) -> void:
@@ -117,6 +120,10 @@ func setup(content_track: Dictionary, lap_count: int) -> void:
 	var rows: Array[HBoxContainer] = []
 	for i in 4:
 		var row := HBoxContainer.new()
+		row.mouse_filter = Control.MOUSE_FILTER_STOP  # tap an answer (phones)
+		row.gui_input.connect(func(e: InputEvent):
+			if e is InputEventMouseButton and e.pressed:
+				Controls.touch.answer = i)
 		row.alignment = BoxContainer.ALIGNMENT_CENTER
 		row.custom_minimum_size = Vector2(280, 0)
 		row.add_theme_constant_override("separation", 10)
@@ -150,9 +157,16 @@ func setup(content_track: Dictionary, lap_count: int) -> void:
 	ob.content_margin_top = 36
 	ob.content_margin_bottom = 36
 	overlay.add_theme_stylebox_override("panel", ob)
+	var ov := VBoxContainer.new()
+	ov.add_theme_constant_override("separation", 14)
+	overlay.add_child(ov)
 	overlay_text = _label(body, 38, Color.WHITE)
 	overlay_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	overlay.add_child(overlay_text)
+	ov.add_child(overlay_text)
+	overlay_buttons = HBoxContainer.new()  # tappable choices, for phones
+	overlay_buttons.alignment = BoxContainer.ALIGNMENT_CENTER
+	overlay_buttons.add_theme_constant_override("separation", 16)
+	ov.add_child(overlay_buttons)
 	overlay.visible = false
 	root.add_child(overlay)
 
@@ -170,6 +184,16 @@ func _label(font: Font, size: int, color: Color) -> Label:
 func show_state(k: Kart, countdown: float, time: float, racers: int) -> void:
 	lap_label.text = "Lap %d/%d" % [clampi(k.lap + 1, 1, laps), laps]
 	time_label.text = "%d:%05.2f" % [int(time) / 60, fmod(time, 60)]
+	if Controls.touch_mode != touch_layout:  # phones: the place goes top left, clear of the buttons
+		touch_layout = Controls.touch_mode
+		if touch_layout:
+			place_label.set_anchors_preset(Control.PRESET_TOP_LEFT)
+			place_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+			place_label.position = Vector2(48, 90)
+		else:
+			place_label.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+			place_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+			place_label.position = Vector2(-348, -190)
 	var p := clampi(k.place, 1, racers)
 	place_label.text = ORDINAL[p - 1]
 	place_label.add_theme_color_override("font_color", Color(PLACE_COLOURS[p - 1]) if p <= 3 else Color.WHITE)
@@ -219,8 +243,19 @@ func show_state(k: Kart, countdown: float, time: float, racers: int) -> void:
 		a_arrows[i].color = col
 
 
-func _show_overlay(text: String) -> void:
+func _show_overlay(text: String, choices: Array = []) -> void:
 	overlay_text.text = text
+	for c in overlay_buttons.get_children():
+		c.queue_free()
+	if Controls.touch_mode:
+		for c in choices:
+			var b := Button.new()
+			b.text = c[0]
+			b.add_theme_font_override("font", chunky)
+			b.add_theme_font_size_override("font_size", 40)
+			b.custom_minimum_size = Vector2(260, 90)
+			b.pressed.connect(func(): choice.emit(c[1]))
+			overlay_buttons.add_child(b)
 	overlay.visible = true
 	overlay.reset_size()
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_CENTER, Control.PRESET_MODE_MINSIZE)
@@ -234,7 +269,10 @@ func show_pause(on: bool) -> void:
 	if not on:
 		overlay.visible = false
 		return
-	_show_overlay("Paused\n\n%s  Resume\n%s  Restart race\n%s  Menu" % [Controls.glyph("accept"), Controls.glyph("restart"), Controls.glyph("menu")] + _quit_hint())
+	if Controls.touch_mode:
+		_show_overlay("Paused", [["Resume", "resume"], ["Restart", "restart"], ["Menu", "menu"]])
+	else:
+		_show_overlay("Paused\n\n%s  Resume\n%s  Restart race\n%s  Menu" % [Controls.glyph("accept"), Controls.glyph("restart"), Controls.glyph("menu")] + _quit_hint())
 
 
 func show_results(karts: Array, me: Kart) -> void:
@@ -256,4 +294,11 @@ func show_results(karts: Array, me: Kart) -> void:
 		lines.append("Waiting for the host to pick the next scene...")
 	else:
 		lines.append("%s  Next scene\n%s  Race again\n%s  Menu" % [Controls.glyph("accept"), Controls.glyph("restart"), Controls.glyph("menu")] + _quit_hint())
-	_show_overlay("\n".join(lines))
+	var choices := []
+	if Game.mode == Game.Mode.HOST and Net.active:
+		choices = [["Back to the lobby", "lobby"]]
+	elif not Net.active:
+		choices = [["Next scene", "next"], ["Race again", "restart"], ["Menu", "menu"]]
+	if Controls.touch_mode:
+		lines.resize(lines.size() - 1)  # the buttons say it
+	_show_overlay("\n".join(lines), choices)

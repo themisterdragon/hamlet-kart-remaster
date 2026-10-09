@@ -3,7 +3,7 @@ extends Node3D
 ## the chase camera and the HUD. Mirrors the N64's race_start/race_update.
 ## Test args (after --): --track=N  --class=0..2  --autotest (a robot drives
 ## and answers, for screenshots)  --ask (a question 1 s after GO)  --laps=N
-## --items (the player gets each item in turn every 4 s).
+## --items (the player gets each item in turn every 4 s)  --touch (phone controls).
 
 var LAPS := 4  # (--laps=N in test runs)
 const BOX_ROWS := [0.14, 0.47, 0.76]
@@ -74,6 +74,8 @@ func _ready() -> void:
 			item_test = true
 		elif arg == "--ask":
 			ask_test = true
+		elif arg == "--touch":
+			Controls.touch_mode = true
 	track = Track.new()
 	add_child(track)
 	track.load_track(track_index)
@@ -121,6 +123,12 @@ func _ready() -> void:
 	Sound.music("act%d" % (int(Content.tracks[track_index].act) + 1))
 	hud = Hud.new()
 	add_child(hud)
+	hud.choice.connect(_choice)
+	var touch := TouchControls.new()
+	touch.pause_pressed.connect(func():
+		if not online and not hud.results_up:
+			_pause(not get_tree().paused))
+	add_child(touch)
 	hud.setup(Content.tracks[track_index], LAPS)
 
 
@@ -813,3 +821,21 @@ func _show_items(ps: Array, ds: Array) -> void:
 		sp.position = Vector3(d[0], d[1] + 10, d[2])
 		add_child(sp)
 		_shown.append(sp)
+
+
+## A tapped choice on the pause or results screen (phones).
+func _choice(what: String) -> void:
+	get_tree().paused = false
+	match what:
+		"resume":
+			_pause(false)
+		"restart":
+			get_tree().reload_current_scene()
+		"next":
+			Game.track = (track_index + 1) % Content.tracks.size()
+			get_tree().reload_current_scene()
+		"menu":
+			get_tree().change_scene_to_file("res://scenes/menu.tscn")
+		"lobby":
+			Net.broadcast({"k": "back"})
+			get_tree().change_scene_to_file("res://scenes/menu.tscn")
