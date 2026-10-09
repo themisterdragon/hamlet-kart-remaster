@@ -107,6 +107,13 @@ func emit(k: Kart, dt: float) -> void:
 	var at := Vector3(k.x, k.y, k.z)
 	var speed := absf(k.speed)
 	var side := -1.0 if randf() < 0.5 else 1.0
+	if k.rev > 0.2:  # revving on the grid: exhaust puffs, and sparks if a rocket start is lined up
+		var back := at - fwd * 20 + Vector3(0, 6, 0)
+		if randf() < dt * 12 * k.rev:
+			spawn(DUST, back, -fwd * 50 + Vector3((randf() - 0.5) * 30, 15 + randf() * 25, (randf() - 0.5) * 30))
+		if k.rev_spark > 0 and randf() < dt * 34:
+			spawn(SPARK_ORANGE if k.rev_spark == 2 else SPARK_BLUE, back + Vector3((randf() - 0.5) * 10, 0, (randf() - 0.5) * 10),
+				-fwd * 60 + Vector3((randf() - 0.5) * 60, 30 + randf() * 50, (randf() - 0.5) * 60))
 	if k.hop <= 0 and speed > 140 and absf(k.steer) > 0.55 and randf() < dt * 18:
 		spawn(DUST, at - fwd * 14 + right * 12 * side + Vector3(0, 2, 0), -fwd * 30 + Vector3(0, 18, 0))
 	if (k.boost_t > 0 or k.star_t > 0) and randf() < dt * 30:

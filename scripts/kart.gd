@@ -80,6 +80,9 @@ var ship_t := 0.0       # Pirate Ship: carried ahead
 var nap_t := 0.0        # Poison in the Ear: slowed to a crawl
 var draft_t := 0.0      # slipstream building up behind a kart
 var start_press := 0.0  # countdown value when gas went down (rocket start)
+var rev := 0.0          # revving on the grid: 0..1, squats and shakes the kart
+var rev_spark := 0      # 1 blue, 2 orange: a rocket start is lined up
+var launch_t := 0.0     # the launch stretch after a rocket start
 
 # the quiz
 var asking := false
@@ -159,6 +162,12 @@ func update(dt: float, pad: Dictionary, countdown: float, best_human_progress: f
 				start_press = 0
 			elif start_press <= 0:
 				start_press = countdown
+		# revving: the kart squats, shakes and puffs exhaust; a rocket start
+		# lined up throws sparks, blue then orange. CPUs rev in the last second
+		var held: bool = pad.gas if human else (countdown < 1.3 and (ch * 5 + track.index) % 3 != 0)
+		rev = move_toward_exp(rev, 1.0 if held else 0.0, dt * (5.0 if held else 4.0))
+		var good := human and start_press >= 1.5 and start_press <= 2.5
+		rev_spark = (2 if countdown < 1.0 else 1) if good and rev > 0.2 else 0
 		_place()
 		return
 	var st: Array = STATS[ch]
@@ -316,7 +325,9 @@ func update(dt: float, pad: Dictionary, countdown: float, best_human_progress: f
 				pad_t = 0.8
 				race.on_boost(self)
 
-	for k in ["boost_t", "bump_t", "shake_t", "verdict_t", "spin_t", "star_t", "ship_t", "nap_t", "pad_t", "roulette_t"]:
+	rev = 0.0
+	rev_spark = 0
+	for k in ["boost_t", "bump_t", "shake_t", "verdict_t", "spin_t", "star_t", "ship_t", "nap_t", "pad_t", "roulette_t", "launch_t"]:
 		set(k, maxf(get(k) - dt, 0))
 	if asking:
 		ask_t -= dt
@@ -466,7 +477,22 @@ func face(cam: Vector3) -> void:
 		model.rotation = Vector3(0, yaw + slide * 0.35 + spin_t * 14, -steer * 0.12 * clampf(speed / 300, 0, 1))
 		var bob := 0.0 if hop > 0 else sin(t * 22 + ch) * clampf(absf(speed) / 300, 0, 1) * 0.6
 		model.position.y = bob
-		model.scale = Vector3(1.15, 0.6, 1.15) if nap_t > 0 else Vector3.ONE
+		# squash and stretch: napping flattens; revving on the grid squats and
+		# shakes; a rocket start stretches it out for a moment
+		var sq := Vector3.ONE
+		if nap_t > 0:
+			sq = Vector3(1.15, 0.6, 1.15)
+		elif rev > 0.01:
+			var throb := 0.5 + 0.5 * absf(sin(t * 18))  # the engine's pulse
+			sq = Vector3(1 + 0.10 * rev * throb, 1 - 0.16 * rev * throb, 1 + 0.08 * rev * throb)
+			model.position.x = sin(t * 61) * rev * 1.4
+			model.position.y = -absf(sin(t * 47)) * rev * 2.0
+		elif launch_t > 0:
+			var u := launch_t / 0.45
+			sq = Vector3(1 - 0.06 * u, 1 + 0.10 * u, 1 + 0.12 * u)
+		if rev <= 0.01:
+			model.position.x = 0
+		model.scale = sq
 		model.visible = ship_t <= 0 and not (star_t > 0 and int(star_t * 12) % 2 == 0)
 		return
 	var view_yaw := atan2(x - cam.x, z - cam.z)
@@ -486,7 +512,8 @@ func face(cam: Vector3) -> void:
 
 const SNAP := ["x", "y", "z", "yaw", "steer", "slide", "hop", "speed", "spin_t", "star_t", "ship_t", "nap_t",
 	"boost_t", "shake_t", "bump_t", "place", "lap", "finished", "finish_time", "item", "roulette_t", "holding",
-	"asking", "ask_t", "verdict_t", "verdict_ok", "answered", "right", "wrong", "drift_dir", "drift_t"]
+	"asking", "ask_t", "verdict_t", "verdict_ok", "answered", "right", "wrong", "drift_dir", "drift_t",
+	"rev", "rev_spark", "launch_t"]
 
 
 ## (host) This kart's state for players' screens.

@@ -334,7 +334,8 @@ func _robot(k: Kart) -> Dictionary:
 		ans = randi() % 4
 	# uses an item a second after it lands; holds the skull for a second, then throws it
 	var use := k.item != Kart.IT_NONE and k.roulette_t <= 0 and not k.holding and fmod(race_time, 2.0) < 0.05
-	return {"stick": k._steer_ai(0), "stick_y": 0.0, "gas": true, "brake": false, "drift_press": false, "drift_held": false,
+	# gas down in the back half of "2": a rocket start
+	return {"stick": k._steer_ai(0), "stick_y": 0.0, "gas": countdown < 2.3, "brake": false, "drift_press": false, "drift_held": false,
 		"item": use, "item_held": k.holding and k.hold_t < 1.0, "answer": ans}
 
 
@@ -670,6 +671,7 @@ func _rocket_starts() -> void:
 		if good:
 			k.boost_t = maxf(k.boost_t, 1.2)
 			k.speed = maxf(k.speed, 120)
+			k.launch_t = 0.45  # the launch stretch
 		elif k.human and k.start_press > 2.5:
 			k.spin_t = maxf(k.spin_t, 0.8)
 		k.start_press = 0
