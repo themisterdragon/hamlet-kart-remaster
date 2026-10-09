@@ -102,14 +102,27 @@ var ai_lane := 0.0
 var ai_think := 0.0
 var ai_alt := false
 
+# smoother controls
+var stick_s := 0.0      # the stick, eased: keys and flicks ramp in instead of snapping
+var drift_buf := 0.0    # a drift press just before landing still counts
+var stats: Array = [1.0, 1.0, 1.0, 1.0]  # speed, pickup, handling, weight: racer and build
+var build: Dictionary
+
+# drawing: the race steps at a fixed rate and shows karts between steps
+var prev_pos := Vector3.ZERO
+var prev_yaw := 0.0
+var vis_yaw := 0.0
+
 var sprite: Sprite3D
-var model: Node3D  # the 3D clay model (tools/make_models.py); the sprite is the fallback
+var model: KartRig  # the built 3D kart (scripts/kart_rig.gd); the sprite is the fallback
 
 
-func setup(t: Track, character: int, is_human: bool, grid_slot: int) -> void:
+func setup(t: Track, character: int, is_human: bool, grid_slot: int, kart_build := {}) -> void:
 	track = t
 	ch = character
 	human = is_human
+	build = KartBuild.clean(kart_build, ch) if not kart_build.is_empty() else KartBuild.own(ch)
+	stats = KartBuild.stats(ch, build)
 	var row := grid_slot / 2
 	var col := grid_slot % 2
 	seg = posmod(t.n - 2 - row, t.n)
@@ -132,11 +145,14 @@ func setup(t: Track, character: int, is_human: bool, grid_slot: int) -> void:
 	sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	sprite.shaded = false
 	add_child(sprite)
-	model = Cast.model(ch)
-	if model:
+	if ResourceLoader.exists(KartRig.PARTS + "body_racer.glb"):
+		model = KartRig.make(ch, build)
 		sprite.visible = false
 		add_child(model)
 	_place()
+	prev_pos = position
+	prev_yaw = yaw
+	vis_yaw = yaw
 
 
 static func fwd_of(a: float) -> Vector2:
@@ -144,7 +160,7 @@ static func fwd_of(a: float) -> Vector2:
 
 
 func top_speed() -> float:
-	return TOP_SPEED * STATS[ch][0] * CLASS_SPEED[race_class]
+	return TOP_SPEED * stats[0] * CLASS_SPEED[race_class]
 
 
 func immune() -> bool:
@@ -170,13 +186,17 @@ func update(dt: float, pad: Dictionary, countdown: float, best_human_progress: f
 		rev_spark = (2 if countdown < 1.0 else 1) if good and rev > 0.2 else 0
 		_place()
 		return
-	var st: Array = STATS[ch]
+	var st: Array = stats
 	var steer_in := 0.0
 	var gas := false
 	var brake := false
 
 	if human and not finished:
-		var sx: float = clampf(pad.stick, -1, 1)
+		var raw: float = clampf(pad.stick, -1, 1)
+		# keys (and a flicked stick) ease in over a few frames and let go a
+		# little quicker, so tapping steers gently instead of jerking
+		stick_s = move_toward(stick_s, raw, dt * (12.0 if absf(raw) < absf(stick_s) or raw * stick_s < 0 else 7.0))
+		var sx := stick_s
 		# response curve: small nudges steer gently, full stick still turns fully
 		var mag := 0.0 if absf(sx) < 0.15 else (absf(sx) - 0.15) / 0.85
 		steer_in = signf(sx) * pow(mag, 1.6)
@@ -202,14 +222,17 @@ func update(dt: float, pad: Dictionary, countdown: float, best_human_progress: f
 		else:
 			# hop-drift: R hops; with R held, the slide starts as soon as the
 			# stick leans either way. Let go for a blue or orange mini-turbo.
-			if pad.drift_press and hop <= 0.5 and drift_dir == 0:
+			if pad.drift_press:
+				drift_buf = 0.15
+			if drift_buf > 0 and hop <= 0.5 and drift_dir == 0 and not airborne:
+				drift_buf = 0
 				hop_v = 110
 				drift_arm = true
 			if drift_arm and not pad.drift_held:
 				drift_arm = false
-			if drift_arm and absf(sx) > 0.35 and speed > 120:
+			if drift_arm and absf(raw) > 0.35 and speed > 120:
 				drift_arm = false
-				drift_dir = 1 if sx > 0 else -1
+				drift_dir = 1 if raw > 0 else -1
 				drift_t = 0
 			if drift_dir != 0:
 				if not pad.drift_held or spin_t > 0 or speed < 100:
@@ -327,7 +350,7 @@ func update(dt: float, pad: Dictionary, countdown: float, best_human_progress: f
 
 	rev = 0.0
 	rev_spark = 0
-	for k in ["boost_t", "bump_t", "shake_t", "verdict_t", "spin_t", "star_t", "ship_t", "nap_t", "pad_t", "roulette_t", "launch_t"]:
+	for k in ["boost_t", "bump_t", "shake_t", "verdict_t", "spin_t", "star_t", "ship_t", "nap_t", "pad_t", "roulette_t", "launch_t", "drift_buf"]:
 		set(k, maxf(get(k) - dt, 0))
 	if asking:
 		ask_t -= dt
@@ -391,7 +414,7 @@ func _walls(dt: float) -> void:
 	var along := track.yaw_at(seg)
 	if speed < 0:
 		along += PI
-	yaw += wrapf(along - yaw, -PI, PI) * (1 - exp(-dt * 8))
+	yaw += wrapf(along - yaw, -PI, PI) * (1 - exp(-dt * (6.0 if into > 10 else 3.0)))
 
 
 ## The CPU line (also the auto-drive while a question is up): returns steer.
@@ -467,36 +490,25 @@ func _place() -> void:
 	position = Vector3(x, y, z)
 
 
-## Show the kart: the 3D model turns with the kart, leans into steering,
-## angles out in a drift and whirls in a spin; the sprite fallback picks the
-## frame for this camera, like the N64.
-func face(cam: Vector3) -> void:
+## Between two fixed steps of the race: where to draw the kart (0..1 of
+## the way from the last step to this one).
+func show_between(a: float) -> void:
+	position = prev_pos.lerp(Vector3(x, y, z), a)
+	vis_yaw = prev_yaw + wrapf(yaw - prev_yaw, -PI, PI) * a
+
+
+## Show the kart: the built model turns with the kart, angles out in a drift
+## and whirls in a spin, and its parts animate (scripts/kart_rig.gd); the
+## sprite fallback picks the frame for this camera, like the N64.
+func face(cam: Vector3, dt := 0.0) -> void:
 	if model:
-		var t := Time.get_ticks_msec() / 1000.0
 		# (the sculpts face +z, the same way yaw 0 drives)
-		model.rotation = Vector3(0, yaw + slide * 0.35 + spin_t * 14, -steer * 0.12 * clampf(speed / 300, 0, 1))
-		var bob := 0.0 if hop > 0 else sin(t * 22 + ch) * clampf(absf(speed) / 300, 0, 1) * 0.6
-		model.position.y = bob
-		# squash and stretch: napping flattens; revving on the grid squats and
-		# shakes; a rocket start stretches it out for a moment
-		var sq := Vector3.ONE
-		if nap_t > 0:
-			sq = Vector3(1.15, 0.6, 1.15)
-		elif rev > 0.01:
-			var throb := 0.5 + 0.5 * absf(sin(t * 18))  # the engine's pulse
-			sq = Vector3(1 + 0.10 * rev * throb, 1 - 0.16 * rev * throb, 1 + 0.08 * rev * throb)
-			model.position.x = sin(t * 61) * rev * 1.4
-			model.position.y = -absf(sin(t * 47)) * rev * 2.0
-		elif launch_t > 0:
-			var u := launch_t / 0.45
-			sq = Vector3(1 - 0.06 * u, 1 + 0.10 * u, 1 + 0.12 * u)
-		if rev <= 0.01:
-			model.position.x = 0
-		model.scale = sq
+		model.rotation = Vector3(0, vis_yaw + slide * 0.35 + spin_t * 14, 0)
+		model.animate(dt, self)
 		model.visible = ship_t <= 0 and not (star_t > 0 and int(star_t * 12) % 2 == 0)
 		return
 	var view_yaw := atan2(x - cam.x, z - cam.z)
-	var rel := view_yaw - yaw + spin_t * 14  # a spin-out whirls it
+	var rel := view_yaw - vis_yaw + spin_t * 14  # a spin-out whirls it
 	var fr := rel / (TAU / KART_FRAMES) + clampf(steer, -1, 1) * 1.6 + slide * 1.5
 	sprite.frame = posmod(roundi(fr), KART_FRAMES)
 	var bob := 0.0 if hop > 0 else sin(Time.get_ticks_msec() / 1000.0 * 22 + ch) * clampf(absf(speed) / 300, 0, 1) * 0.8
@@ -570,3 +582,4 @@ func smooth(dt: float) -> void:
 	z = p.z
 	yaw += wrapf(net_yaw - yaw, -PI, PI) * k
 	_place()
+	vis_yaw = yaw

@@ -9,6 +9,7 @@ var out := ""
 var at: Array[int] = []
 var presses := {}
 var frame := 0
+var t0 := 0
 
 
 func _ready() -> void:
@@ -48,5 +49,10 @@ func _process(_delta: float) -> void:
 			Input.parse_input_event(ev)
 	if frame in at:
 		get_viewport().get_texture().get_image().save_png("%s/shot_%d.png" % [out, frame])
+	if frame == 60:
+		t0 = Time.get_ticks_msec()
 	if at.is_empty() or frame >= at.max():
+		if frame > 60:  # (frames drawn per second after the first 60, for comparing builds)
+			print("dev_shot fps: %.1f, triangles %d, draw calls %d" % [(frame - 60) * 1000.0 / maxf(Time.get_ticks_msec() - t0, 1),
+				Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME), Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)])
 		get_tree().quit()

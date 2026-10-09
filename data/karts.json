@@ -1,0 +1,120 @@
+{
+ "wheel_r": 7.2,
+ "bodies": {
+  "racer": {
+   "front": [
+    14.2,
+    12.5,
+    6.0
+   ],
+   "back": [
+    14.8,
+    -12.5,
+    7.2
+   ]
+  },
+  "royal": {
+   "front": [
+    14.2,
+    12.5,
+    6.0
+   ],
+   "back": [
+    14.8,
+    -12.5,
+    7.2
+   ]
+  },
+  "coach": {
+   "front": [
+    13.6,
+    11.5,
+    6.4
+   ],
+   "back": [
+    14.4,
+    -11.5,
+    7.6
+   ]
+  },
+  "coffin": {
+   "front": [
+    13.4,
+    12.5,
+    5.6
+   ],
+   "back": [
+    13.8,
+    -12.5,
+    6.4
+   ]
+  },
+  "ship": {
+   "front": [
+    13.6,
+    11.0,
+    5.8
+   ],
+   "back": [
+    14.4,
+    -11.5,
+    7.0
+   ]
+  }
+ },
+ "wheels": [
+  "tread",
+  "spoked",
+  "royal"
+ ],
+ "own": [
+  {
+   "paint": "2a2834",
+   "trim": "d0d8e4",
+   "seat": "4a2030",
+   "body": "racer"
+  },
+  {
+   "paint": "a81830",
+   "trim": "f0b838",
+   "seat": "6a1020",
+   "body": "royal"
+  },
+  {
+   "paint": "2a4c98",
+   "trim": "f0b838",
+   "seat": "1a2a60",
+   "body": "royal"
+  },
+  {
+   "paint": "c4b0e2",
+   "trim": "f4e8cc",
+   "seat": "9a82c0",
+   "body": "racer"
+  },
+  {
+   "paint": "7a5030",
+   "trim": "f0b838",
+   "seat": "4e321e",
+   "body": "racer"
+  },
+  {
+   "paint": "2c7040",
+   "trim": "c88840",
+   "seat": "1a4a28",
+   "body": "racer"
+  },
+  {
+   "paint": "2a3e66",
+   "trim": "f2e6c8",
+   "seat": "1c2a44",
+   "body": "racer"
+  },
+  {
+   "paint": "8cc0d2",
+   "trim": "e6faff",
+   "seat": "5a8a9a",
+   "body": "royal"
+  }
+ ]
+}

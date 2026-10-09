@@ -3,6 +3,7 @@
 # Runs the game with software rendering (no graphics chip: this laptop has
 # frozen running GPU-heavy apps) on a hidden X display, and saves shot_N.png
 # at each frame in FRAMES (e.g. 30,90). PRESSES like 60:ui_down,70:ui_accept.
+# SHOT_SCENE=res://scenes/race.tscn starts straight in that scene.
 # Start the hidden display once (Hyprland):
 #   hyprctl dispatch 'hl.dsp.exec_cmd("Xwayland :99 -geometry 1920x1080 -noreset", { workspace = "special:hkemu silent" })'
 OUT=$1; FRAMES=$2; PRESSES=$3; shift 3
@@ -13,7 +14,7 @@ cd "$(dirname "$0")/.."
 sync
 env -u WAYLAND_DISPLAY DISPLAY=$DPY LIBGL_ALWAYS_SOFTWARE=1 GALLIUM_DRIVER=llvmpipe \
   __GLX_VENDOR_LIBRARY_NAME=mesa \
-  godot --display-driver x11 --rendering-driver opengl3 --audio-driver Dummy --path . \
+  godot --display-driver x11 --rendering-driver opengl3 --audio-driver Dummy --path . $SHOT_SCENE \
   -- --shot="$OUT" --at="$FRAMES" ${PRESSES:+--press=$PRESSES} "$@" > "$OUT/godot.log" 2>&1 &
 PID=$!
 for i in $(seq 1 240); do

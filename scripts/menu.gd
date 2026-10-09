@@ -42,11 +42,15 @@ func _ready() -> void:
 		_waiting()
 	else:
 		_title()
+	for arg in OS.get_cmdline_user_args():  # (test) straight to the garage: --garage=N
+		if arg.begins_with("--garage="):
+			_garage(int(arg.substr(9)))
 
 
 # ------------------------------------------------------------- building
 
 func _clear() -> void:
+	in_garage = false
 	for c in page.get_children():
 		c.queue_free()
 
@@ -131,12 +135,42 @@ func _title() -> void:
 		_button("Join a Class Race", _join_page)
 	else:
 		_text("Class races (up to 8 players) work in the browser version.", body, 26, Color(1, 1, 1, 0.7))
+	_button("Controls", _controls_page)
 	_focus_first()
+
+
+## Every control, for a controller and the keyboard side by side (button
+## names follow the controller that's plugged in).
+func _controls_page() -> void:
+	_clear()
+	_text("Controls", title_font, 64, Color("f2d27a"))
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	grid.add_theme_constant_override("h_separation", 48)
+	grid.add_theme_constant_override("v_separation", 10)
+	page.add_child(grid)
+	var pad_name := "PlayStation controller" if Controls.style() == "ps" else "Controller"
+	var rows: Array = [["", pad_name, "Keyboard"]] + Controls.table()
+	for i in rows.size():
+		for j in 3:
+			var l := _label_in(grid, chunky if i == 0 else body, 30, Color("f2d27a") if i == 0 or j == 0 else Color.WHITE)
+			l.text = rows[i][j]
+			l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT if j == 0 else HORIZONTAL_ALIGNMENT_CENTER
+	if Controls.touch_mode or OS.has_feature("web_android") or OS.has_feature("web_ios"):
+		_text("On a phone or tablet the buttons are on the screen; tap an answer to pick it.", body, 26, Color(1, 1, 1, 0.8))
+	_text("While a question is up your kart drives itself, so the arrows (or D-pad) answer.", body, 26, Color(1, 1, 1, 0.8))
+	_button("Back", _title)
+	_focus_first()
+
+
+var focus_char := 0  # the racer highlighted on character select
 
 
 func _characters(next: Callable) -> void:
 	_clear()
-	after_char = next
+	if next.is_valid():
+		after_char = next
 	_text("Choose your racer", title_font, 64, Color("f2d27a"))
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -158,10 +192,19 @@ func _characters(next: Callable) -> void:
 		b.expand_icon = true
 		b.custom_minimum_size = Vector2(340, 104)
 		b.add_theme_font_size_override("font_size", 32)
-		b.focus_entered.connect(func(): _preview(i))
+		b.focus_entered.connect(func():
+			focus_char = i
+			_preview(i))
 		b.mouse_entered.connect(func(): b.grab_focus())
-	row.add_child(_preview_panel())
-	_focus_first()
+	var side := _preview_panel()
+	row.add_child(side)
+	var garage := _button("Build your kart", func(): _garage(focus_char), side)
+	garage.custom_minimum_size = Vector2(420, 70)
+	garage.add_theme_font_size_override("font_size", 32)
+	await get_tree().process_frame
+	var buttons := grid.get_children()
+	if focus_char < buttons.size():
+		buttons[focus_char].grab_focus()
 
 
 # ------------------------------------------------- the 3D racer preview
@@ -218,10 +261,10 @@ func _preview_panel() -> Control:
 	podium.position.y = -3
 	pv_root.add_child(podium)
 	var cam := Camera3D.new()
-	cam.position = Vector3(0, 36, 96)
 	cam.fov = 40
 	pv_root.add_child(cam)
-	cam.look_at(Vector3(0, 16, 0))
+	var eye := Vector3(0, 46, 128)
+	cam.transform = Transform3D(Basis.looking_at(Vector3(0, 19, 0) - eye), eye)  # (not in the tree yet)
 	box.add_child(vpc)
 	pv_name = _label_in(box, title_font, 54, Color("f2d27a"))
 	pv_tag = _label_in(box, body, 28, Color(1, 1, 1, 0.85))
@@ -241,25 +284,125 @@ func _label_in(parent: Node, font: Font, size: int, color: Color) -> Label:
 	return l
 
 
-func _preview(ch: int) -> void:
+func _preview(ch: int, b: Dictionary = {}) -> void:
+	var angle := 0.0
 	if pv_model and is_instance_valid(pv_model):
+		angle = pv_model.rotation.y
 		pv_model.queue_free()
-	pv_model = Cast.model(ch)
-	if pv_model:
-		pv_root.add_child(pv_model)
+	if b.is_empty():
+		b = KartBuild.saved(ch)
+	pv_model = KartRig.make(ch, b)
+	pv_model.rotation.y = angle
+	pv_root.add_child(pv_model)
 	var c: Dictionary = Content.characters[ch]
 	pv_name.text = c.name
 	pv_tag.text = c.tag
-	# the racer's real handling numbers (Kart.STATS), as 1-5 dots
-	var st: Array = Kart.STATS[ch]
-	var ranges := [[0.96, 1.05], [0.80, 1.14], [0.88, 1.15], [0.7, 1.3]]
-	var names := ["Speed", "Pickup", "Handling", "Weight"]
+	pv_stats.text = _stat_lines(ch, b)
+
+
+## The racer's real handling with this build (KartBuild.stats) as 1-5 dots,
+## with a + or - where the parts change it.
+func _stat_lines(ch: int, b: Dictionary) -> String:
+	var st := KartBuild.stats(ch, b)
+	var base: Array = Kart.STATS[ch]
 	var lines := []
 	for i in 4:
-		var r: Array = ranges[i]
-		var dots := clampi(1 + roundi((st[i] - r[0]) / (r[1] - r[0]) * 4), 1, 5)
-		lines.append("%s  %s" % [names[i], "●".repeat(dots) + "○".repeat(5 - dots)])
-	pv_stats.text = "\n".join(lines)
+		var d := KartBuild.dots(i, st[i])
+		var change: float = st[i] / base[i]
+		var mark := "  +" if change > 1.005 else ("  −" if change < 0.995 else "")
+		lines.append("%s  %s%s" % [KartBuild.STAT_NAMES[i], "●".repeat(d) + "○".repeat(5 - d), mark])
+	return "\n".join(lines)
+
+
+# ---------------------------------------------------------------- garage
+
+var g_ch := 0
+var g_build: Dictionary
+var g_rows := {}  # part -> its button
+var g_note: Label
+var in_garage := false
+
+
+## Build your kart: body, wheels, hood ornament, paint and trim, each a row
+## that ◀ ▶ (or a press) steps through; the stats change as you go.
+func _garage(ch: int) -> void:
+	_clear()
+	g_ch = ch
+	g_build = KartBuild.saved(ch)
+	g_rows = {}
+	in_garage = true
+	_text("%s's kart" % Content.characters[ch].name, title_font, 60, Color("f2d27a"))
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 40)
+	page.add_child(row)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 12)
+	row.add_child(col)
+	for part in ["body", "wheels", "orn", "paint", "trim"]:
+		var b := _button("", func(): _step_part(part, 1), col)
+		b.custom_minimum_size = Vector2(640, 76)
+		b.add_theme_font_size_override("font_size", 32)
+		b.gui_input.connect(func(e: InputEvent):
+			if e.is_action_pressed("ui_left") or e.is_action_pressed("ui_right"):
+				Sound.sfx("move")
+				_step_part(part, -1 if e.is_action_pressed("ui_left") else 1)
+				b.accept_event())
+		g_rows[part] = b
+	g_note = _label_in(col, body, 26, Color(1, 1, 1, 0.85))
+	g_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	g_note.custom_minimum_size = Vector2(640, 70)
+	_button("Race with this kart", func():
+		KartBuild.store(g_ch, g_build)
+		_picked(g_ch), col)
+	_button("Back to the racers", func():
+		KartBuild.store(g_ch, g_build)
+		focus_char = g_ch
+		_characters(Callable()), col)
+	_button("Their own kart", func():
+		g_build = KartBuild.own(g_ch)
+		_garage_show(), col)
+	row.add_child(_preview_panel())
+	_garage_show()
+	await get_tree().process_frame
+	g_rows.body.grab_focus()
+
+
+func _step_part(part: String, d: int) -> void:
+	var b := g_build
+	match part:
+		"body", "wheels":
+			var list: Array = KartBuild.BODIES if part == "body" else KartBuild.WHEELS
+			var ids := list.map(func(p): return p[0])
+			b[part] = ids[posmod(ids.find(b[part]) + d, ids.size())]
+		"orn":
+			b.orn = posmod(int(b.orn) + 1 + d, 9) - 1  # -1 (none), then each racer's
+		"paint", "trim":
+			var own: String = KartBuild.own(g_ch)[part]
+			var list: Array = [own] + (KartBuild.PAINTS if part == "paint" else KartBuild.TRIMS).filter(func(c): return c != own)
+			b[part] = list[posmod(list.find(b[part]) + d, list.size())]
+	_garage_show()
+
+
+func _garage_show() -> void:
+	var b := g_build
+	var body_p := KartBuild.part(KartBuild.BODIES, b.body)
+	var wheel_p := KartBuild.part(KartBuild.WHEELS, b.wheels)
+	g_rows.body.text = "<   Body: %s   >" % body_p[1]
+	g_rows.wheels.text = "<   Wheels: %s   >" % wheel_p[1]
+	g_rows.orn.text = "<   Ornament: %s   >" % ("none" if int(b.orn) < 0 else Content.characters[int(b.orn)].name + "'s")
+	g_rows.paint.text = "<   Paint   >"
+	g_rows.trim.text = "<   Trim   >"
+	for part in ["paint", "trim"]:  # a swatch of the colour on the button
+		var img := Image.create(40, 40, false, Image.FORMAT_RGBA8)
+		img.fill(Color(b[part]))
+		for i in 40:  # a light edge so dark colours still show on the dark button
+			for e in [0, 39]:
+				img.set_pixel(i, e, Color.WHITE)
+				img.set_pixel(e, i, Color.WHITE)
+		g_rows[part].icon = ImageTexture.create_from_image(img)
+	g_note.text = "%s: %s.  %s: %s." % [body_p[1], body_p[2], wheel_p[1], wheel_p[2]]
+	_preview(g_ch, b)
 
 
 func _process(delta: float) -> void:
@@ -269,6 +412,7 @@ func _process(delta: float) -> void:
 
 func _picked(ch: int) -> void:
 	Game.my_char = ch
+	focus_char = ch
 	Sound.voice(ch, Sound.LINE_SELECT)
 	after_char.call()
 
@@ -307,7 +451,7 @@ func _go_race() -> void:
 
 func _start_hosting() -> void:
 	Game.code = Net.new_code()
-	Game.players = [{"peer": "", "ch": Game.my_char}]
+	Game.players = [{"peer": "", "ch": Game.my_char, "kart": KartBuild.saved(Game.my_char)}]
 	Net.host(Game.code)
 	_lobby()
 	status_label.text = "Opening the race..."
@@ -316,7 +460,7 @@ func _start_hosting() -> void:
 func _lobby() -> void:
 	_clear()
 	if Game.players.is_empty():
-		Game.players = [{"peer": "", "ch": Game.my_char}]
+		Game.players = [{"peer": "", "ch": Game.my_char, "kart": KartBuild.saved(Game.my_char)}]
 	_text("Class race code", body, 34, Color("f2d27a"))
 	_text(" ".join(Game.code.split("")), chunky, 120, Color.WHITE)
 	_text("Players go to this page, choose Join a Class Race and type the code.", body, 26, Color(1, 1, 1, 0.8))
@@ -351,7 +495,7 @@ func _net_opened(id: String) -> void:
 func _peer_joined(peer: String) -> void:
 	if Game.mode == Game.Mode.CLIENT:
 		Game.host_peer = peer
-		Net.send(peer, {"k": "hello", "ch": Game.my_char})
+		Net.send(peer, {"k": "hello", "ch": Game.my_char, "kart": KartBuild.saved(Game.my_char)})
 		hello_sent = true
 		_waiting()
 
@@ -372,7 +516,8 @@ func _net_message(peer: String, d: Dictionary) -> void:
 				Net.send(peer, {"k": "full"})
 				return
 			Game.players = Game.players.filter(func(p): return p.peer != peer)
-			Game.players.append({"peer": peer, "ch": int(d.ch)})
+			var ch := clampi(int(d.ch), 0, 7)
+			Game.players.append({"peer": peer, "ch": ch, "kart": KartBuild.clean(d.get("kart"), ch)})
 			_refresh_lobby()
 			_send_lobby()
 	else:
@@ -387,6 +532,7 @@ func _net_message(peer: String, d: Dictionary) -> void:
 				Game.race_class = int(d.cls)
 				Game.kart_chars = d.chars
 				Game.kart_peers = d.peers
+				Game.kart_builds = d.get("builds", [])
 				Game.my_kart = int(d.you)
 				_go_race()
 
@@ -400,20 +546,24 @@ func _send_lobby() -> void:
 func _host_start() -> void:
 	var chars := []
 	var peers := []
+	var builds := []
 	var cpu_chars := range(8)
 	cpu_chars.shuffle()
 	for i in MAX_PLAYERS - Game.players.size():
 		chars.append(cpu_chars[i])
 		peers.append(null)
+		builds.append({})
 	for p in Game.players:
 		chars.append(p.ch)
 		peers.append(p.peer)
+		builds.append(p.get("kart", {}))
 	Game.kart_chars = chars
 	Game.kart_peers = peers
+	Game.kart_builds = builds
 	Game.my_kart = peers.find("")
 	for i in peers.size():
 		if peers[i] is String and peers[i] != "":
-			Net.send(peers[i], {"k": "start", "track": Game.track, "cls": Game.race_class, "chars": chars, "peers": peers, "you": i})
+			Net.send(peers[i], {"k": "start", "track": Game.track, "cls": Game.race_class, "chars": chars, "peers": peers, "builds": builds, "you": i})
 	_go_race()
 
 
@@ -502,6 +652,11 @@ func _lost(why: String) -> void:
 
 ## Circle / B / Esc goes back to the title (not from inside a lobby).
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel") and not Net.active:
+	if event.is_action_pressed("ui_cancel") and in_garage:
+		Sound.sfx("move")
+		KartBuild.store(g_ch, g_build)
+		focus_char = g_ch
+		_characters(Callable())
+	elif event.is_action_pressed("ui_cancel") and not Net.active:
 		Sound.sfx("move")
 		_title()

@@ -4,7 +4,8 @@ extends Node3D
 ## Test args (after --): --track=N  --class=0..2  --autotest (a robot drives
 ## and answers, for screenshots)  --ask (a question 1 s after GO)  --laps=N
 ## --items (the player gets each item in turn every 4 s)  --touch (phone controls)
-## --click-answer=N (with --ask: click answer box N with the mouse).
+## --click-answer=N (with --ask: click answer box N with the mouse)
+## --view=hazardN / --view=clutterN (the camera watches that obstacle).
 
 var LAPS := 4  # (--laps=N in test runs)
 const BOX_ROWS := [0.14, 0.47, 0.76]
@@ -22,6 +23,7 @@ var autotest := false
 var ask_test := false
 var item_test := false
 var click_test := -1  # (test) click this answer box with the mouse
+var view_test := ""   # (test) the camera watches an obstacle
 var item_test_next := 0
 var track_index := 6
 var finished_t := 0.0  # how long the player has been over the line
@@ -48,7 +50,7 @@ var latched := {}       # (player) button presses not sent yet
 # items in flight and on the road, and the moving scenery
 var projs: Array = []  # {type, owner, target, seg, t, lat, speed, life, dir, node}
 var drops: Array = []  # {owner, pos, life, grace, node}
-var hazards: Array = []  # {sample, speed, phase, node, tell}
+var obstacles: Obstacles  # hazards and loose clutter (scripts/obstacles.gd)
 # item odds by place (esp skull letter trap armor ship poison): the further
 # back, the stronger the help; a quiz streak moves you up a tier
 const ODDS := [
@@ -81,6 +83,8 @@ func _ready() -> void:
 			Controls.touch_mode = true
 		elif arg.begins_with("--click-answer="):
 			click_test = int(arg.substr(15))
+		elif arg.begins_with("--view="):
+			view_test = arg.substr(7)
 	track = Track.new()
 	add_child(track)
 	track.load_track(track_index)
@@ -107,13 +111,21 @@ func _ready() -> void:
 		k.race_class = cls
 		add_child(k)
 		var human: bool = g == me or (online and Game.kart_peers[g] != null)
-		k.setup(track, int(chars[g]), human, g)
+		var b: Dictionary = {}
+		if online:
+			var bs: Array = Game.kart_builds
+			b = bs[g] if g < bs.size() and bs[g] is Dictionary else {}
+		elif g == me:
+			b = KartBuild.saved(Game.my_char)
+		k.setup(track, int(chars[g]), human, g, b)
 		if online and Game.kart_peers[g] is String:
 			k.peer = Game.kart_peers[g]
 		karts.append(k)
 	player = karts[me]
 	_boxes()
-	_hazards()
+	obstacles = Obstacles.new()
+	add_child(obstacles)
+	obstacles.setup(self, track, track_index)
 	fx = Fx.new()
 	add_child(fx)
 
@@ -259,24 +271,69 @@ func _pause(on: bool) -> void:
 	hud.show_pause(on)
 
 
+## The race runs in fixed steps of STEP seconds, whatever the screen's rate,
+## so karts handle the same on a 30 Hz Chromebook and a 144 Hz monitor;
+## between steps karts are drawn part way (Kart.show_between) and the camera
+## follows every frame.
+const STEP := 1.0 / 60
+var acc := 0.0
+var pad_in := {}  # player 1's controls, presses held until a step reads them
+
+
 func _process(delta: float) -> void:
 	if get_tree().paused:
 		return
-	var dt := minf(delta, 1.0 / 20)
 	if Game.mode == Game.Mode.CLIENT and online:
-		_client_process(dt)
+		_client_process(minf(delta, 1.0 / 20))
 		return
+	# judge this computer on the grid: under 45 frames a second, go light
+	if countdown > 0 and countdown < 3.5 and not Game.low_quality:
+		perf_frames += 1
+		perf_time += delta
+		if perf_time > 2.0 and perf_frames / perf_time < 45:
+			_low_quality()
+	var pad := Controls.read(0)
+	for key in ["drift_press", "item"]:
+		pad[key] = pad[key] or pad_in.get(key, false)
+	if pad.answer < 0:
+		pad.answer = pad_in.get("answer", -1)
+	pad_in = pad
+	acc += minf(delta, 0.25)
+	var steps := 0
+	while acc >= STEP and steps < 6:
+		acc -= STEP
+		steps += 1
+		_step(STEP)
+		pad_in.drift_press = false
+		pad_in.item = false
+		pad_in.answer = -1
+	if steps == 6:
+		acc = 0  # far behind (a very slow frame): let it go rather than race to catch up
+	var a := acc / STEP
+	for k in karts:
+		k.show_between(a)
+	obstacles.pose(race_time + (a * STEP if countdown <= 0 else 0.0), a)
+	_camera(minf(delta, 0.1))
+	for k in karts:
+		k.face(cam.global_position, minf(delta, 0.1))
+		# a kart right at the camera (the grid row behind you) would fill the screen
+		var near := k != player and Vector2(k.position.x - cam.position.x, k.position.z - cam.position.z).length() <= 50
+		if k.model == null:
+			k.sprite.visible = not near
+		elif near:
+			k.model.visible = false
+	hud.show_state(player, countdown, race_time, karts.size())
+	touch.set_driving(not (player.asking or player.verdict_t > 0))
+	Sound.watch(player, countdown, LAPS, int(Content.tracks[track_index].act))
+
+
+## One fixed step of the race.
+func _step(dt: float) -> void:
 	if player.finished:
 		finished_t += dt
 		if finished_t > 2.0 and not hud.results_up:
 			hud.show_results(karts, player)
 	if countdown > 0:
-		# judge this computer on the grid: under 45 frames a second, go light
-		if countdown < 3.5 and not Game.low_quality:
-			perf_frames += 1
-			perf_time += delta
-			if perf_time > 2.0 and perf_frames / perf_time < 45:
-				_low_quality()
 		countdown -= dt
 		if countdown <= 0:
 			_rocket_starts()
@@ -306,7 +363,9 @@ func _process(delta: float) -> void:
 		if k.human:
 			best = maxf(best, k.progress)
 	for k in karts:
-		var pad := Controls.read(0) if k == player else {}
+		k.prev_pos = Vector3(k.x, k.y, k.z)
+		k.prev_yaw = k.yaw
+		var pad: Dictionary = pad_in if k == player else {}
 		if k == player and autotest:
 			pad = _robot(k)
 		elif k.peer != "":
@@ -322,22 +381,9 @@ func _process(delta: float) -> void:
 	_update_boxes(dt)
 	_update_projs(dt)
 	_update_drops(dt)
-	_update_hazards()
+	obstacles.step(dt, karts, race_time, true)
 	for k in karts:
 		fx.emit(k, dt)
-	_camera(dt)
-	for k in karts:
-		k.face(cam.global_position)
-		# a kart right at the camera (the grid row behind you) would fill the screen
-		# a kart right at the camera (the grid row behind you) would fill the screen
-		var near := k != player and Vector2(k.x - cam.position.x, k.z - cam.position.z).length() <= 50
-		if k.model == null:
-			k.sprite.visible = not near
-		elif near:
-			k.model.visible = false
-	hud.show_state(player, countdown, race_time, karts.size())
-	touch.set_driving(not (player.asking or player.verdict_t > 0))
-	Sound.watch(player, countdown, LAPS, int(Content.tracks[track_index].act))
 	if online:
 		send_t -= dt
 		if send_t <= 0:
@@ -396,8 +442,8 @@ func _collide() -> void:
 			if l >= min_d or l < 0.01:
 				continue
 			d /= l
-			var wp: float = Kart.STATS[p.ch][3]
-			var wq: float = Kart.STATS[q.ch][3]
+			var wp: float = p.stats[3]
+			var wq: float = q.stats[3]
 			var kp := wq / (wp + wq)
 			var kq := wp / (wp + wq)
 			var push := min_d - l
@@ -432,22 +478,43 @@ func _rank() -> void:
 		order[i].place = i + 1
 
 
+var cam_h := 0.0  # the camera's height, eased on its own so hops don't jolt it
+
+
 func _camera(dt: float) -> void:
 	var r := player
-	cam_yaw += wrapf(r.yaw - cam_yaw, -PI, PI) * (1 - exp(-dt * 5))
+	var at := r.position  # where the kart is drawn this frame
+	# follow the heading, half of a drift's angle too, so a slide stays framed
+	cam_yaw += wrapf(r.vis_yaw + r.slide * 0.15 - cam_yaw, -PI, PI) * (1 - exp(-dt * 5))
 	var fast := r.boost_t > 0
 	cam_boost = Kart.move_toward_exp(cam_boost, 1.0 if fast else 0.0, dt * (6.0 if fast else 2.5))
 	var back := CAM_BACK + 24 * cam_boost
 	var up := CAM_UP + 6 * cam_boost
 	var f := Kart.fwd_of(cam_yaw)
-	var target := Vector3(r.x - f.x * back, r.y - r.hop * 0.5 + up, r.z - f.y * back)
+	var ground := at.y - r.hop
+	cam_h = ground + r.hop * 0.4 if dt >= 1 else Kart.move_toward_exp(cam_h, ground + r.hop * 0.4, dt * 6)
+	var target := Vector3(at.x - f.x * back, cam_h + up, at.z - f.y * back)
 	var k := 1 - exp(-dt * 10)
 	cam.position = cam.position.lerp(target, k) if dt < 1 else target
 	if r.shake_t > 0:
 		var s := r.shake_t * 18
 		cam.position += Vector3(randf() - 0.5, randf() - 0.5, 0) * s
 	cam.fov = 68 + 9 * cam_boost
-	cam.look_at(Vector3(r.x + f.x * 70, r.y + 10, r.z + f.y * 70))
+	if view_test != "":
+		var at_o: Vector3
+		if view_test.begins_with("hazard"):
+			at_o = obstacles.hazards[int(view_test.substr(6))].node.position
+			at_o = Vector3(at_o.x, track.point(obstacles.hazards[int(view_test.substr(6))].sample, 0, 0).y, at_o.z)
+		else:
+			at_o = obstacles.loose[int(view_test.substr(7)) * 4].home
+		var o_seg := track.locate_global(at_o.x, at_o.z)
+		var back_p := track.point(o_seg - 5, 0, 0) + Vector3(0, 90, 0)
+		cam.position = back_p
+		cam.look_at(at_o + Vector3(0, 20, 0))
+		return
+	# look a little into the bend
+	var side := Vector2(-f.y, f.x) * -r.steer * 14
+	cam.look_at(Vector3(at.x + f.x * 70 + side.x, cam_h + 10, at.z + f.y * 70 + side.y))
 
 
 # ------------------------------------------------------------------ items
@@ -600,48 +667,6 @@ func _remove(list: Array, entry: Dictionary) -> void:
 
 # ---------------------------------------------------- hazards, slipstream
 
-func _hazards() -> void:
-	var shadow := CylinderMesh.new()
-	shadow.top_radius = 34
-	shadow.bottom_radius = 34
-	shadow.height = 0.5
-	var smat := StandardMaterial3D.new()
-	smat.albedo_color = Color(0, 0, 0, 0.35)
-	smat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	smat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	shadow.material = smat
-	for h in Track.data().tracks[track_index].hazards:
-		var node := Props.make(h.prop, track.theme)
-		add_child(node)
-		var tell := MeshInstance3D.new()  # a shadow where it'll be in a moment
-		tell.mesh = shadow
-		add_child(tell)
-		hazards.append({"sample": int(float(h.at) * track.n), "speed": float(h.speed), "phase": float(h.phase), "node": node, "tell": tell, "ghost": h.prop == "GHOST"})
-
-
-## Scenery sweeps across the road. It never costs more than a wrong answer:
-## a light bump to the side, no spin; anyone answering passes straight through.
-func _update_hazards(collide := true) -> void:
-	var swing := track.road_half - 28
-	for z in hazards:
-		var ph: float = race_time * z.speed * 1.1 + z.phase
-		var pos := track.point(z.sample, 0, sin(ph) * swing)
-		z.tell.position = track.point(z.sample, 0, sin(ph + 0.8 * z.speed * 1.1) * swing) + Vector3(0, 1.2, 0)
-		if z.ghost:
-			pos.y += 10 + sin(race_time * 3) * 8
-		z.node.position = pos
-		z.node.rotation.y = track.yaw_at(z.sample) + PI / 2 * (1 if cos(ph) > 0 else -1)
-		if not collide:
-			continue
-		for o in karts:
-			if o.asking or o.verdict_t > 0 or o.bump_t > 0 or o.immune():
-				continue
-			var d := Vector2(o.x - pos.x, o.z - pos.z)
-			if d.length_squared() < 40 * 40:
-				o.speed *= 0.8
-				_bump(o, _side_toward(o, d), 170)
-
-
 func _side_toward(k: Kart, n: Vector2) -> Vector2:
 	var r := track.right(k.seg)
 	var side := n.dot(r)
@@ -768,7 +793,7 @@ func _snapshot() -> Dictionary:
 	var ds := []
 	for d in drops:
 		ds.append([snappedf(d.pos.x, 0.1), snappedf(d.pos.y, 0.1), snappedf(d.pos.z, 0.1)])
-	return {"k": "s", "cd": countdown, "t": race_time, "ks": ks, "q": qs, "bx": bx, "ps": ps, "ds": ds}
+	return {"k": "s", "cd": countdown, "t": race_time, "ks": ks, "q": qs, "bx": bx, "ps": ps, "ds": ds, "lo": obstacles.snapshot()}
 
 
 ## (player) Send my controls, show the host's race.
@@ -798,6 +823,7 @@ func _client_process(dt: float) -> void:
 		for i in boxes.size():
 			boxes[i].node.visible = (int(snap.bx) >> i) & 1 == 0
 		_show_items(snap.ps, snap.ds)
+		obstacles.apply(snap.get("lo", []))
 	else:
 		countdown = maxf(countdown - dt, 0) if countdown > 0 else countdown
 		if countdown <= 0:
@@ -807,12 +833,13 @@ func _client_process(dt: float) -> void:
 	var spin := race_time * 1.6
 	for b in boxes:
 		b.node.get_child(0).rotation = Vector3(spin * 0.6, spin, 0)
-	_update_hazards(false)
+	obstacles.step(dt, karts, race_time, false)
+	obstacles.pose(race_time)
 	for k in karts:
 		fx.emit(k, dt)
 	_camera(dt)
 	for k in karts:
-		k.face(cam.global_position)
+		k.face(cam.global_position, dt)
 		if k.model == null:
 			k.sprite.visible = k.sprite.visible and (k == player or Vector2(k.x - cam.position.x, k.z - cam.position.z).length() > 50)
 	if player.finished:

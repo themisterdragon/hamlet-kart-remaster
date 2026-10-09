@@ -296,7 +296,10 @@ func show_pause(on: bool) -> void:
 	if Controls.touch_mode:
 		_show_overlay("Paused", [["Resume", "resume"], ["Restart", "restart"], ["Menu", "menu"]])
 	else:
-		_show_overlay("Paused\n\n%s  Resume\n%s  Restart race\n%s  Menu" % [Controls.glyph("accept"), Controls.glyph("restart"), Controls.glyph("menu")] + _quit_hint())
+		var help := ["", "Controls (controller · keyboard)"]
+		for r in Controls.table().slice(0, 6):
+			help.append("%s:  %s  ·  %s" % r)
+		_show_overlay("Paused\n\n%s  Resume\n%s  Restart race\n%s  Menu" % [Controls.glyph("accept"), Controls.glyph("restart"), Controls.glyph("menu")] + _quit_hint() + "\n".join(help))
 
 
 func show_results(karts: Array, me: Kart) -> void:

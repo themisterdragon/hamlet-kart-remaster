@@ -122,6 +122,23 @@ static func glyph(job: String) -> String:
 	return g[job][style()]
 
 
+## Every control, for the Controls page and the pause screen: [what, on a
+## controller (in its own button names), on the keyboard].
+static func table() -> Array:
+	var ps := style() == "ps"
+	var b := func(xbox: String, sony: String) -> String: return sony if ps else xbox
+	return [
+		["Steer", "Left stick", "Arrows or A / D"],
+		["Gas", b.call("A or RT", "✕ or R2"), "X or W"],
+		["Brake / reverse", b.call("B or X", "○ or □"), "Z or S"],
+		["Drift: hold, lean, let go for a boost", b.call("RB", "R1"), "Shift or C"],
+		["Item (hold the skull; back rolls it behind)", b.call("LB or LT", "L1 or L2"), "Space (Down: behind)"],
+		["Answer a question", "D-pad", "Arrow keys"],
+		["Pause", b.call("Menu", "Options"), "Esc"],
+		["Menus: pick / back", b.call("A / B", "✕ / ○"), "Enter / Esc"],
+	]
+
+
 static func is_menu_button(event: InputEvent) -> bool:
 	return (event is InputEventKey and event.pressed and event.physical_keycode == KEY_M) or \
 		(event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_BACK)

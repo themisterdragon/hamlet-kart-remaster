@@ -58,6 +58,19 @@ players send their controls), so every screen shows the same race.
 - Keep the kart code input-driven (it already takes controls as data each
   frame) so local split screen and online share one path.
 
+## Garage and feel (in the code since demo 0.3)
+- Build your kart (scripts/kart_build.gd): body, wheels, ornament, paint,
+  trim. Parts trade stats (about ±4-10% each, never a straight upgrade, the
+  quiz's 45% boost stays the big one). Saved per racer in user://garage.cfg;
+  sent with hello/start in class races and checked (KartBuild.clean).
+- Karts in parts (scripts/kart_rig.gd): springs, rolling and steering wheels,
+  a leaning rider, near/far meshes with shadows from the light copies.
+- Fixed 60 Hz race steps with drawing in between (race.gd STEP).
+- Obstacles (scripts/obstacles.gd): per-prop movement, wobble, clutter piles
+  (the host sends flying clutter to players in class races).
+- To check on real devices: the web build's paint shader, frame rate on a
+  Chromebook, and garage saves surviving a browser restart.
+
 ## Milestone 2: remaster, one Act at a time
 Act III first; it sets the standard.
 - 3D cast and karts (scripted Blender models in the Royal Storybook style),

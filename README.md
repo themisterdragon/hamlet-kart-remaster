@@ -42,6 +42,24 @@ what a class race connects to.
   matching button names, rumble, and an on-screen keyboard for the class code
 - An automatic light mode for slower computers such as school Chromebooks
 
+New since demo 0.3 (in the code, not in a release yet):
+- **Build your kart** on character select: five bodies, three sets of
+  wheels, any racer's hood ornament, paint and trim. Every part trades one
+  stat for another, shown as you pick; each racer remembers their build
+  (on the computer, or in the browser's own storage) and it goes with you
+  into class races
+- Karts in parts: wheels roll and steer, the body rides on springs (nose up
+  under gas, rolls in bends, thumps on landing), the rider leans into turns;
+  far-off karts switch to light copies, about a third fewer triangles a frame
+- Smoother driving: the race runs at a fixed 60 steps a second on any screen,
+  keys ease the steering in, a drift press just before landing still counts,
+  softer barrier turns, a steadier camera that looks into bends
+- Moving obstacles that each move their own way (barrels roll, goblets and
+  skulls bounce, censers swing from a beam, ghosts drift, ships rock) and
+  wobble when brushed; piles of clutter that karts send flying
+- A Controls page on the title screen (controller and keyboard side by
+  side, in your controller's button names) and the controls on the pause screen
+
 Coming next: split screen. See [docs/PLAN.md](docs/PLAN.md).
 
 ### Controls
@@ -76,7 +94,9 @@ in the N64 edition and re-import, so both editions stay the same.
 
 `tools/make_models.py` turns the N64 edition's sculpted characters
 (`tools/characters.py` there) into the 3D models in `assets/models/`, with
-`tools/sdfmesh` (C, needs gcc with OpenMP).
+`tools/sdfmesh` (C, needs gcc with OpenMP). `make_models.py parts` makes the
+garage's parts from `tools/kart_parts.py` (riders, kart bodies, wheels and
+hood ornaments, each with a light copy for far away) and `data/karts.json`.
 
 ## Privacy check
 

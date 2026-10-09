@@ -7,17 +7,22 @@ Usage: python3 -I tools/make_models.py [N64 repo] [cell size] [characters...]
        (default ../hamlet-kart-public, cell 0.7, all eight)
        python3 -I tools/make_models.py props [names...]
        (the scenery from tools/sculpt_props.py into assets/models/props/)
+       python3 -I tools/make_models.py parts
+       (the garage's parts from tools/kart_parts.py into assets/models/parts/:
+       riders, kart bodies, wheels, hood ornaments, each with a light _lo copy
+       for karts far off, and data/karts.json with every racer's own kart)
 Model space: the kart faces +z, wheels on y = 0, in world units.
 """
 import importlib.util, json, os, struct, subprocess, sys, tempfile
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 PROPS = len(sys.argv) > 1 and sys.argv[1] == "props"
-ARGS = [] if PROPS else sys.argv[1:]
+PARTS = len(sys.argv) > 1 and sys.argv[1] == "parts"
+ARGS = [] if PROPS or PARTS else sys.argv[1:]
 SRC = os.path.abspath(ARGS[0] if ARGS else os.path.join(ROOT, "..", "hamlet-kart-public"))
 CELL = float(ARGS[1]) if len(ARGS) > 1 else 0.7
 ONLY = [int(a) for a in ARGS[2:]]
-ONLY_PROPS = sys.argv[2:] if PROPS else []
+ONLY_PROPS = sys.argv[2:] if PROPS or PARTS else []
 EXE = os.path.join(ROOT, "build", "sdfmesh")
 OUT = os.path.join(ROOT, "assets", "models")
 LANDMARKS = {"TOWER", "CHAPEL", "STAGE", "SHIP", "THRONE", "WILLOW", "SKULLS", "GHOST"}
@@ -91,12 +96,70 @@ def write_glb(path, nv, nt, verts, tris):
         f.write(struct.pack("<I4s", len(buf), b"BIN\0") + buf)
 
 
+def budgeted(scene, cell, budget):
+    """Mesh at `cell`, coarsening the grid until it fits the triangle budget
+    (triangles go with 1/cell^2)."""
+    nv, nt, verts, tris = mesh(scene, cell)
+    while nt > budget * 1.15:
+        cell *= (nt / budget) ** 0.5
+        nv, nt, verts, tris = mesh(scene, cell)
+    return cell, (nv, nt, verts, tris)
+
+
+def parts(chars):
+    sys.path.insert(0, os.path.join(ROOT, "tools"))
+    import kart_parts as kp
+    out = os.path.join(OUT, "parts")
+    os.makedirs(out, exist_ok=True)
+
+    def scene_of(fn):
+        s = chars.Scene()
+        fn(s, chars)
+        return s
+
+    # name: (scene, cell, budget near, budget far (0: no far copy))
+    jobs = {}
+    for name, b in kp.BODIES.items():
+        jobs["body_" + name] = (scene_of(b[0]), 0.7, 12000, 1800)
+    for name, fn in kp.WHEELS.items():
+        jobs["wheel_" + name] = (scene_of(fn), 0.35, 1800, 260)
+    riders, ornaments, colours = kp.riders_and_ornaments(chars)
+    for i, s in riders.items():
+        jobs["rider_c%02d" % i] = (s, 0.7, 15000, 2600)
+    for i, s in ornaments.items():
+        jobs["orn_c%02d" % i] = (s, 0.3, 1500, 0)
+    for name, (scene, cell, near, far) in jobs.items():
+        if ONLY_PROPS and not any(name.startswith(o) for o in ONLY_PROPS):
+            continue
+        c, m = budgeted(scene, cell, near)
+        write_glb(os.path.join(out, name + ".glb"), *m)
+        line = f"{name}: {m[1]} triangles (cell {c:.2f})"
+        if far:
+            c2, m2 = budgeted(scene, c * 2.2, far)
+            write_glb(os.path.join(out, name + "_lo.glb"), *m2)
+            line += f", far {m2[1]}"
+        print(line)
+    hexc = lambda c: "%02x%02x%02x" % tuple(c)
+    data = {
+        "wheel_r": kp.WHEEL_R,
+        "bodies": {n: {"front": b[1], "back": b[2]} for n, b in kp.BODIES.items()},
+        "wheels": list(kp.WHEELS),
+        "own": [{"paint": hexc(c["body"]), "trim": hexc(c["trim"]), "seat": hexc(c["seat"]),
+                 "body": "royal" if c["fins"] else "racer"} for i, c in sorted(colours.items())],
+    }
+    with open(os.path.join(ROOT, "data", "karts.json"), "w") as f:
+        json.dump(data, f, indent=1)
+
+
 def main():
     build_tool()
     sys.path.insert(0, os.path.join(SRC, "tools"))
     spec = importlib.util.spec_from_file_location("hk_characters", os.path.join(SRC, "tools", "characters.py"))
     chars = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(chars)
+    if PARTS:
+        parts(chars)
+        return
     if PROPS:
         sys.path.insert(0, os.path.join(ROOT, "tools"))
         import sculpt_props

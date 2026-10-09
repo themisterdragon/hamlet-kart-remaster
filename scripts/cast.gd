@@ -1,6 +1,6 @@
 class_name Cast
-## The cast's 3D clay models (assets/models/cNN.glb, from tools/make_models.py),
-## with a soft clay material that takes its colour from the sculpt.
+## The soft clay material for the sculpts (riders, ornaments, scenery), which
+## takes its colour from the sculpt. Karts are built by scripts/kart_rig.gd.
 
 static var _mat: StandardMaterial3D
 
@@ -16,13 +16,3 @@ static func clay() -> StandardMaterial3D:
 		_mat.rim = 0.2
 		_mat.rim_tint = 0.6
 	return _mat
-
-
-static func model(ch: int) -> Node3D:
-	var path := "res://assets/models/c%02d.glb" % ch
-	if not ResourceLoader.exists(path):
-		return null
-	var root: Node3D = load(path).instantiate()
-	for mi in root.find_children("*", "MeshInstance3D", true, false):
-		mi.material_override = clay()
-	return root
