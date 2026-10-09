@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Controller test</title>
+<style>
+  :root { color-scheme: dark; }
+  body { background: #141a33; color: #fff; font: 18px/1.4 system-ui, sans-serif; margin: 0; padding: 16px; }
+  h1 { font-size: 24px; margin: 0 0 8px; }
+  p { margin: 0 0 12px; color: #d8dce8; }
+  .pad { border: 2px solid #f2c94c; border-radius: 12px; padding: 12px; margin-bottom: 16px; }
+  .id { font-weight: 700; word-break: break-all; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+  .b { min-width: 44px; padding: 6px 4px; text-align: center; border-radius: 8px; background: #2a3150; border: 2px solid #3a4060; }
+  .b.on { background: #f2c94c; color: #141a33; border-color: #fff; font-weight: 700; }
+  .name { display: block; font-size: 12px; }
+  code { color: #f2c94c; }
+</style>
+</head>
+<body>
+<h1>Hamlet Kart: controller test</h1>
+<p>Press any button on your controller to wake it up, then press each button. Lit boxes are pressed.
+"Raw" is what the browser reports; "Game" is what Hamlet Kart sees. A screenshot of this page with a
+button held down tells us exactly how to map it.</p>
+<div id="pads"><p>No controller yet: press a button on it.</p></div>
+<script>
+  const raw = navigator.getGamepads.bind(navigator);
+</script>
+<script src="gamepad.js"></script>
+<script>
+  const NAMES = ["A / Cross", "B / Circle", "X / Square", "Y / Triangle", "LB / L1", "RB / R1", "LT / L2", "RT / R2",
+    "Back / Create", "Start / Options", "L stick", "R stick", "D-pad up", "D-pad down", "D-pad left", "D-pad right", "Home"];
+  const v = (b) => (typeof b === "object" ? b.value : b);
+  function buttons(list, named) {
+    return '<div class="row">' + Array.from(list, (b, i) => {
+      const val = v(b);
+      return `<div class="b ${val > 0.5 ? "on" : ""}">${i}<span class="name">${named && NAMES[i] ? NAMES[i] : val.toFixed(2)}</span></div>`;
+    }).join("") + "</div>";
+  }
+  function axes(list) {
+    return '<div class="row">' + Array.from(list, (a, i) => `<div class="b ${Math.abs(a) > 0.5 ? "on" : ""}">axis ${i}<span class="name">${a.toFixed(2)}</span></div>`).join("") + "</div>";
+  }
+  function draw() {
+    const r = raw(), g = navigator.getGamepads();
+    let html = "";
+    for (let i = 0; i < r.length; i++) {
+      const p = r[i];
+      if (!p) continue;
+      const q = g[i];
+      html += `<div class="pad"><div class="id">${p.id}</div>
+        <div>mapping: <code>${p.mapping || "(none: raw layout)"}</code> &middot; ${p.buttons.length} buttons, ${p.axes.length} axes</div>
+        <div>Raw buttons:</div>${buttons(p.buttons, false)}
+        <div>Raw axes:</div>${axes(p.axes)}
+        <div>Game sees:</div>${buttons(q.buttons, true)}${axes(q.axes)}</div>`;
+    }
+    if (html) document.getElementById("pads").innerHTML = html;
+    requestAnimationFrame(draw);
+  }
+  draw();
+</script>
+</body>
+</html>
