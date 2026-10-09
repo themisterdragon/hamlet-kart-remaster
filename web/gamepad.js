@@ -1,5 +1,6 @@
-// Some browsers (Firefox on Linux, for one) report controllers in their raw
-// Linux layout instead of the "standard" one the game understands: the
+// Some browsers report controllers they don't know (Firefox on Linux, or
+// Chrome on Android with a pad like the AYN Thor's) in a raw layout instead
+// of the "standard" one the game understands: the
 // D-pad and triggers come as axes, and the buttons in kernel order. This
 // remaps those pads to the standard layout before the game reads them.
 (() => {
@@ -28,5 +29,16 @@
       vibrationActuator: p.vibrationActuator, hapticActuators: p.hapticActuators,
     };
   }
-  navigator.getGamepads = () => Array.from(raw(), (p) => (p && p.mapping !== "standard" ? remap(p) : p));
+  const fix = (p) => (p && p.mapping !== "standard" ? remap(p) : p);
+  navigator.getGamepads = () => Array.from(raw(), fix);
+  // The game also learns a pad's layout from the "gamepadconnected" event,
+  // from the browser's raw pad: hand it the fixed one there too (else pads
+  // like the AYN Thor's get their shoulder buttons read as Back and Guide).
+  const addListener = window.addEventListener.bind(window);
+  window.addEventListener = function (type, fn, opts) {
+    if (type === "gamepadconnected" && typeof fn === "function") {
+      return addListener(type, (e) => fn({ type: e.type, gamepad: fix(e.gamepad) }), opts);
+    }
+    return addListener(type, fn, opts);
+  };
 })();
