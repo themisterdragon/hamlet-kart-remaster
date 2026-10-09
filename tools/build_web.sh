@@ -12,7 +12,7 @@ rm -rf build/web && mkdir -p build/web
 touch build/.gdignore
 godot --headless --path . --export-release Web "build/web/game-${B%+}.html" 2>&1 | grep -E "^ERROR" && exit 1
 rm -f build/web/*.import
-cp web/net.js web/gamepad.js web/controller-test.html build/web/
+cp web/net.js web/gamepad.js web/peerjs.min.js web/controller-test.html build/web/
 echo "${B%+}" > build/web/latest.txt
 # The front page names no build: it asks latest.txt (fetched fresh, past any
 # cache) which one is current, so a cached front page can never point at a

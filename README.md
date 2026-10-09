@@ -24,6 +24,10 @@ empty karts. No accounts and no names: the code is the only thing that
 travels, through the free [PeerJS](https://peerjs.com) matchmaking service.
 Class races are in the browser version; the downloads are for solo play.
 
+**Privacy:** the game collects and stores nothing: no accounts, names,
+analytics, cookies or saved answers. See [PRIVACY.md](PRIVACY.md) for exactly
+what a class race connects to.
+
 ### What's in demo 0.3
 - All 16 scenes, all 8 racers, all 160 questions, all 7 items
 - The racers as 3D clay figures, and sculpted clay scenery for every scene

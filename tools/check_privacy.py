@@ -23,6 +23,10 @@ def is_license(path):
     return os.path.basename(path).endswith("-OFL.txt")  # font designers' contact emails
 
 
+def is_vendored(path):
+    return path.endswith(".min.js")  # third-party minified code: its email-like strings are code, not emails
+
+
 def git(*args):
     return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, check=True).stdout
 
@@ -71,7 +75,7 @@ def main():
             for m in pat.finditer(data):
                 line = data.count(b"\n", 0, m.start()) + 1
                 problems.append(f"{path}:{line}: matches {pat.pattern.decode()}")
-        if binary or is_license(path):
+        if binary or is_license(path) or is_vendored(path):
             continue  # fonts carry their designers' emails
         for m in EMAIL.finditer(data):
             if not EMAIL_OK.search(m.group()):
