@@ -28,6 +28,10 @@ var cam: Camera3D
 var cam_yaw := 0.0
 var cam_boost := 0.0
 var hud: Hud
+var env: Environment
+var sun: DirectionalLight3D
+var perf_frames := 0     # frames counted during the countdown, to judge this computer
+var perf_time := 0.0
 var fx: Fx
 
 # online class races (Game.Mode.HOST runs the race; CLIENT shows it)
@@ -122,7 +126,7 @@ func _ready() -> void:
 
 func _environment() -> void:
 	var th := track.theme
-	var env := Environment.new()
+	env = Environment.new()
 	# a soft sky in the scene's colours: deep overhead, fog at the horizon
 	var sky_mat := ProceduralSkyMaterial.new()
 	sky_mat.sky_top_color = Color(th.sky).darkened(0.25)
@@ -151,13 +155,23 @@ func _environment() -> void:
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
-	var sun := DirectionalLight3D.new()
+	sun = DirectionalLight3D.new()
 	sun.light_color = Color(th.sun)
 	sun.light_energy = 0.85
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 900
 	sun.rotation_degrees = Vector3(-55, 35, 0)
 	add_child(sun)
+	if Game.low_quality:
+		_low_quality()
+
+
+## For slow computers (school Chromebooks): no shadows, glow or smoothing.
+func _low_quality() -> void:
+	Game.low_quality = true
+	sun.shadow_enabled = false
+	env.glow_enabled = false
+	get_viewport().msaa_3d = Viewport.MSAA_DISABLED
 
 
 func _boxes() -> void:
@@ -207,7 +221,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_tree().reload_current_scene()
 		elif _is_restart(event):
 			get_tree().reload_current_scene()
-		elif event is InputEventKey and event.pressed and event.physical_keycode == KEY_M:
+		elif Controls.is_menu_button(event):
 			get_tree().change_scene_to_file("res://scenes/menu.tscn")
 		return
 	if get_tree().paused:
@@ -216,6 +230,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif _is_restart(event):
 			_pause(false)
 			get_tree().reload_current_scene()
+		elif Controls.is_menu_button(event):
+			_pause(false)
+			get_tree().change_scene_to_file("res://scenes/menu.tscn")
 		elif event is InputEventKey and event.pressed and event.physical_keycode == KEY_Q and not OS.has_feature("web"):
 			get_tree().quit()
 	elif start:
@@ -244,6 +261,12 @@ func _process(delta: float) -> void:
 		if finished_t > 2.0 and not hud.results_up:
 			hud.show_results(karts, player)
 	if countdown > 0:
+		# judge this computer on the grid: under 45 frames a second, go light
+		if countdown < 3.5 and not Game.low_quality:
+			perf_frames += 1
+			perf_time += delta
+			if perf_time > 2.0 and perf_frames / perf_time < 45:
+				_low_quality()
 		countdown -= dt
 		if countdown <= 0:
 			_rocket_starts()

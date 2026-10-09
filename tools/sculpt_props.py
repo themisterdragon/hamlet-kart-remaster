@@ -260,7 +260,114 @@ def castle(s):
     s.pop()
 
 
+def arras(s):
+    """The tapestry Polonius hides behind."""
+    s.group()
+    s.cone((-46, 0, 0), (-46, 104, 0), 2.6, 2.2, WOOD_D)
+    s.cone((46, 0, 0), (46, 104, 0), 2.6, 2.2, WOOD_D)
+    s.cone((-48, 102, 0), (48, 102, 0), 2.4, 2.4, GOLD, shine=0.7)
+    s.group()
+    for i in range(6):  # heavy folds
+        s.ell((-38 + i * 15.2, 56, (i % 2) * 2.5), (9.5, 44, 3.2), C(0x7A2848) if i % 2 else C(0x8E3058), k=4)
+    s.box((0, 58, 3.5), (20, 22, 0.8), GOLD, rad=0.6, k=1)  # the woven crest
+    s.group()
+    s.box((10, 8, 3), (6, 7, 3), C(0x5A3A1E), rad=2)  # a pair of shoes peeking out
+    s.box((-4, 8, 3), (6, 7, 3), C(0x5A3A1E), rad=2)
+
+
+def portrait(s):
+    """The two kings' pictures: an easel with a gilt frame."""
+    s.group()
+    s.cone((-18, 0, 6), (0, 90, 0), 2.2, 1.8, WOOD_D)
+    s.cone((18, 0, 6), (0, 90, 0), 2.2, 1.8, WOOD_D)
+    s.cone((0, 0, -16), (0, 80, 0), 2.2, 1.8, WOOD_D)
+    s.group()
+    s.box((0, 58, 3), (24, 30, 2.5), GOLD, rad=1.2, shine=0.8)
+    s.box((0, 58, 4.5), (19.5, 25.5, 1.4), C(0x2C3A5A), rad=0.6, k=0.5)
+    s.sphere((0, 64, 5.5), 7, C(0xF4CBA4), k=0.5)  # the old king
+    s.box((0, 72, 5.8), (7, 2.5, 1), GOLD, rad=0.5)  # his crown
+    s.ell((0, 48, 5.5), (12, 8, 1.2), RED, k=1)
+
+
+def tent(s):
+    s.group()
+    s.cone((0, 0, 0), (0, 70, 0), 46, 4, CREAM, k=0)
+    for i in range(8):
+        t = i * math.pi / 4
+        s.cone((math.cos(t) * 42, 2, math.sin(t) * 42), (0, 68, 0), 4, 2, RED if i % 2 else CREAM, k=3)
+    s.group()
+    s.cone((0, 66, 0), (0, 96, 0), 1.6, 1.2, WOOD_D)
+    s.box((8, 92, 0), (8, 4.5, 0.6), C(0x2A4A8A), rad=0.4)
+    s.box((0, 18, 44), (12, 18, 2), C(0x3A2010), rad=6, sub=True, k=1)  # the door flap
+
+
+def swords(s):
+    s.group()
+    s.box((0, 4, 0), (22, 4, 10), STONE_D, rad=1.5)
+    for d in (-1, 1):
+        s.push()
+        s.translate(0, 8, 0)
+        s.rotate("z", d * 28)
+        s.box((0, 34, 0), (2.8, 30, 1.6), C(0xD8DEE8), rad=0.8, shine=0.9)
+        s.box((0, 4, 0), (9, 1.8, 2), GOLD, rad=0.6, shine=0.8)  # the guard
+        s.cone((0, 3, 0), (0, -8, 0), 1.6, 1.6, WOOD_D)
+        s.sphere((0, -10, 0), 2.4, GOLD, shine=0.8)
+        s.pop()
+
+
+def rooster(s):
+    """The cock that crows and sends the ghost away."""
+    s.group()
+    s.cone((-5, 0, 0), (-4, 16, 0), 1.2, 1.2, GOLD)
+    s.cone((5, 0, 0), (4, 16, 0), 1.2, 1.2, GOLD)
+    s.ell((0, 26, 0), (11, 11, 15), C(0xC85A28), k=0)
+    s.sphere((0, 38, 11), 7, C(0xC85A28), k=4)
+    s.cone((0, 38, 17), (0, 37, 23), 2.4, 0.4, GOLD, k=0.5)  # beak
+    s.group()
+    for i in range(3):
+        s.sphere((0, 45 + i * 0.5, 8 + i * 3.5), 3, RED, k=1.5)  # comb
+    s.ell((0, 33, 17), (1.6, 3.5, 1.5), RED, k=0.5)  # wattle
+    for e in (-1, 1):
+        s.sphere((e * 4.2, 40, 15.5), 1.4, C(0x1C181E))
+    s.group()
+    for i, c in enumerate([C(0x2A4A3A), C(0x1C3A6A), C(0x2A4A3A)]):  # tail feathers
+        s.ell((0, 34 + i * 4, -14 - i * 2), (2.5, 10, 4), c, k=2)
+
+
+def worm(s):
+    """The worm that goes through the guts of a beggar."""
+    s.group()
+    for i in range(7):
+        x = i * 7 - 21
+        s.sphere((x, 5 + math.sin(i * 0.9) * 3, math.cos(i * 0.9) * 4), 5.5 - abs(i - 3) * 0.3, C(0xD08A8A), k=3)
+    s.group()
+    for e in (-1, 1):
+        s.sphere((24, 9, e * 2.4), 1.3, C(0x1C181E))
+
+
+def letter(s):
+    s.group()
+    s.box((0, 2, 0), (22, 1.2, 15), CREAM, rad=0.6)
+    s.cone((-21, 3, -14), (0, 3.4, 0), 1, 0.5, C(0xD8CCB0), k=1.2)
+    s.cone((21, 3, -14), (0, 3.4, 0), 1, 0.5, C(0xD8CCB0), k=1.2)
+    s.cyl((0, 4, 0), 4.5, 2, RED, rnd=0.8, shine=0.6)  # the royal seal
+
+
+def censer(s):
+    s.group()
+    s.cone((0, 0, 0), (0, 70, 0), 1.4, 1.4, IRON)
+    s.cone((0, 70, 0), (18, 74, 0), 1.2, 1.2, IRON, k=1)
+    s.cone((18, 74, 0), (18, 56, 0), 0.5, 0.5, GOLD)
+    s.ell((18, 50, 0), (7, 6, 7), GOLD, k=1, shine=0.85)
+    s.cone((18, 54, 0), (18, 60, 0), 4, 1, GOLD, k=1.5, shine=0.85)
+    s.group()
+    s.sphere((18, 64, 0), 3, C(0xE8E4F0), k=0, emit=0.2)  # a wisp of incense
+    s.sphere((16, 70, 1), 2.4, C(0xE8E4F0), k=2, emit=0.2)
+
+
 ALL = {
+    "ARRAS": (arras, 1.0), "PORTRAIT": (portrait, 0.7), "TENT": (tent, 1.2), "SWORDS": (swords, 0.5),
+    "ROOSTER": (rooster, 0.5), "WORM": (worm, 0.4), "LETTER": (letter, 0.4), "CENSER": (censer, 0.5),
     "PINE": (pine, 0.9), "SNOWPINE": (lambda s: pine(s, True), 0.9), "TOWER": (tower, 1.6), "TORCH": (torch, 0.6),
     "BANNER": (banner, 0.8), "TABLE": (table, 0.9), "BOOKS": (books, 0.5), "SPYBUSH": (bush, 0.7),
     "FLOWERS": (lambda s: bush(s, True), 0.7), "BARREL": (barrel, 0.6), "TOMB": (tomb, 0.7), "ICEROCK": (icerock, 0.8),

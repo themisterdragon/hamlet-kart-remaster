@@ -127,12 +127,15 @@ func _characters(next: Callable) -> void:
 	_clear()
 	after_char = next
 	_text("Choose your racer", title_font, 64, Color("f2d27a"))
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 40)
+	page.add_child(row)
 	var grid := GridContainer.new()
-	grid.columns = 4
-	grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	grid.add_theme_constant_override("h_separation", 18)
-	grid.add_theme_constant_override("v_separation", 18)
-	page.add_child(grid)
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 14)
+	grid.add_theme_constant_override("v_separation", 14)
+	row.add_child(grid)
 	var sheet: Texture2D = load("res://assets/images/portraits.png")
 	for i in Content.characters.size():
 		var c: Dictionary = Content.characters[i]
@@ -142,12 +145,115 @@ func _characters(next: Callable) -> void:
 		var b := _button(c.name, func(): _picked(i), grid)
 		b.icon = at
 		b.expand_icon = true
-		b.add_theme_constant_override("icon_max_width", 96)
-		b.custom_minimum_size = Vector2(380, 130)
+		b.custom_minimum_size = Vector2(340, 104)
 		b.add_theme_font_size_override("font_size", 32)
-		b.tooltip_text = c.tag
-	_text("Each racer drives a little differently. Pick anyone!", body, 26, Color(1, 1, 1, 0.75))
+		b.focus_entered.connect(func(): _preview(i))
+		b.mouse_entered.connect(func(): b.grab_focus())
+	row.add_child(_preview_panel())
 	_focus_first()
+
+
+# ------------------------------------------------- the 3D racer preview
+
+var pv_root: Node3D
+var pv_model: Node3D
+var pv_name: Label
+var pv_tag: Label
+var pv_stats: Label
+
+
+func _preview_panel() -> Control:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	var vpc := SubViewportContainer.new()
+	vpc.stretch = true
+	vpc.custom_minimum_size = Vector2(560, 470)
+	var vp := SubViewport.new()
+	vp.own_world_3d = true
+	vp.transparent_bg = true
+	vp.msaa_3d = Viewport.MSAA_4X
+	vpc.add_child(vp)
+	pv_root = Node3D.new()
+	vp.add_child(pv_root)
+	var env := Environment.new()
+	env.background_mode = Environment.BG_CLEAR_COLOR
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color("9a98b0")
+	env.ambient_light_energy = 0.6
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	var we := WorldEnvironment.new()
+	we.environment = env
+	pv_root.add_child(we)
+	var key := DirectionalLight3D.new()  # a warm key light and a cool rim, like a studio portrait
+	key.rotation_degrees = Vector3(-35, 30, 0)
+	key.light_color = Color("fff0d8")
+	key.shadow_enabled = true
+	pv_root.add_child(key)
+	var rim := DirectionalLight3D.new()
+	rim.rotation_degrees = Vector3(-20, 200, 0)
+	rim.light_color = Color("9ab8ff")
+	rim.light_energy = 0.7
+	pv_root.add_child(rim)
+	var podium := MeshInstance3D.new()  # a gold-rimmed podium to turn on
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 34
+	cyl.bottom_radius = 36
+	cyl.height = 6
+	var pm := StandardMaterial3D.new()
+	pm.albedo_color = Color("3a2a5a")
+	pm.roughness = 0.4
+	cyl.material = pm
+	podium.mesh = cyl
+	podium.position.y = -3
+	pv_root.add_child(podium)
+	var cam := Camera3D.new()
+	cam.position = Vector3(0, 36, 96)
+	cam.fov = 40
+	pv_root.add_child(cam)
+	cam.look_at(Vector3(0, 16, 0))
+	box.add_child(vpc)
+	pv_name = _label_in(box, title_font, 54, Color("f2d27a"))
+	pv_tag = _label_in(box, body, 28, Color(1, 1, 1, 0.85))
+	pv_stats = _label_in(box, body, 28, Color.WHITE)
+	return box
+
+
+func _label_in(parent: Node, font: Font, size: int, color: Color) -> Label:
+	var l := Label.new()
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.add_theme_font_override("font", font)
+	l.add_theme_font_size_override("font_size", size)
+	l.add_theme_color_override("font_color", color)
+	l.add_theme_color_override("font_outline_color", Color(0.05, 0.05, 0.1))
+	l.add_theme_constant_override("outline_size", 8)
+	parent.add_child(l)
+	return l
+
+
+func _preview(ch: int) -> void:
+	if pv_model and is_instance_valid(pv_model):
+		pv_model.queue_free()
+	pv_model = Cast.model(ch)
+	if pv_model:
+		pv_root.add_child(pv_model)
+	var c: Dictionary = Content.characters[ch]
+	pv_name.text = c.name
+	pv_tag.text = c.tag
+	# the racer's real handling numbers (Kart.STATS), as 1-5 dots
+	var st: Array = Kart.STATS[ch]
+	var ranges := [[0.96, 1.05], [0.80, 1.14], [0.88, 1.15], [0.7, 1.3]]
+	var names := ["Speed", "Pickup", "Handling", "Weight"]
+	var lines := []
+	for i in 4:
+		var r: Array = ranges[i]
+		var dots := clampi(1 + roundi((st[i] - r[0]) / (r[1] - r[0]) * 4), 1, 5)
+		lines.append("%s  %s" % [names[i], "●".repeat(dots) + "○".repeat(5 - dots)])
+	pv_stats.text = "\n".join(lines)
+
+
+func _process(delta: float) -> void:
+	if pv_model and is_instance_valid(pv_model):
+		pv_model.rotation.y += delta * 0.9
 
 
 func _picked(ch: int) -> void:
@@ -316,11 +422,31 @@ func _join_page() -> void:
 	code_edit.placeholder_text = "ABCDE"
 	code_edit.text_submitted.connect(func(_t): _join_go())
 	page.add_child(code_edit)
+	# an on-screen keyboard, for controllers (and touch): the code's own letters
+	var keys := GridContainer.new()
+	keys.columns = 8
+	keys.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	keys.add_theme_constant_override("h_separation", 8)
+	keys.add_theme_constant_override("v_separation", 8)
+	page.add_child(keys)
+	var first: Button = null
+	for ch in Net.CODE_CHARS:
+		var k := _button(ch, func():
+			if code_edit.text.length() < 5:
+				code_edit.text += ch, keys)
+		k.custom_minimum_size = Vector2(84, 64)
+		if first == null:
+			first = k
+	var del := _button("⌫", func(): code_edit.text = code_edit.text.left(-1), keys)
+	del.custom_minimum_size = Vector2(84, 64)
 	_button("Next: choose your racer", _join_go)
 	_button("Back", _title)
-	status_label = _text("", body, 26, Color(1, 1, 1, 0.7))
+	status_label = _text("Type the code, or pick the letters with %s." % Controls.glyph("accept"), body, 26, Color(1, 1, 1, 0.7))
 	await get_tree().process_frame
-	code_edit.grab_focus()
+	if Controls.style() == "keys":
+		code_edit.grab_focus()
+	else:
+		first.grab_focus()
 
 
 func _join_go() -> void:

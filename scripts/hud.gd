@@ -227,14 +227,14 @@ func _show_overlay(text: String) -> void:
 
 
 func _quit_hint() -> String:
-	return "" if OS.has_feature("web") else "\nQ  Quit"
+	return "" if OS.has_feature("web") or Controls.style() != "keys" else "\nQ  Quit"
 
 
 func show_pause(on: bool) -> void:
 	if not on:
 		overlay.visible = false
 		return
-	_show_overlay("Paused\n\nEnter / Start  Resume\nR / Y  Restart race" + _quit_hint())
+	_show_overlay("Paused\n\n%s  Resume\n%s  Restart race\n%s  Menu" % [Controls.glyph("accept"), Controls.glyph("restart"), Controls.glyph("menu")] + _quit_hint())
 
 
 func show_results(karts: Array, me: Kart) -> void:
@@ -251,9 +251,9 @@ func show_results(karts: Array, me: Kart) -> void:
 	lines.append("Questions right: %d of %d" % [me.right, me.right + me.wrong])
 	lines.append("")
 	if Game.mode == Game.Mode.HOST and Net.active:
-		lines.append("Enter / Start  Back to the lobby")
+		lines.append("%s  Back to the lobby" % Controls.glyph("accept"))
 	elif Game.mode == Game.Mode.CLIENT and Net.active:
 		lines.append("Waiting for the host to pick the next scene...")
 	else:
-		lines.append("Enter / Start  Next track\nR / Y  Race again\nM  Menu" + _quit_hint())
+		lines.append("%s  Next scene\n%s  Race again\n%s  Menu" % [Controls.glyph("accept"), Controls.glyph("restart"), Controls.glyph("menu")] + _quit_hint())
 	_show_overlay("\n".join(lines))

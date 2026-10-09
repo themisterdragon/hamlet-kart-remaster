@@ -33,7 +33,10 @@ Class races are in the browser version; the downloads are for solo play.
 - The N64 edition's orchestral score, sound effects and character voices
 - Speed classes, results screen, and a tour of every scene
 
-Coming next: real 3D scenery and landmarks, split screen. See
+Also new: sculpted clay scenery for every scene, a 3D character select,
+full controller support (menus, an on-screen keyboard for the class code,
+PlayStation or Xbox button names) and an automatic low-quality mode for
+slower computers. Coming next: split screen. See
 [docs/PLAN.md](docs/PLAN.md).
 
 ### Controls

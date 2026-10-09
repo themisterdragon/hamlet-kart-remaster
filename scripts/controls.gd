@@ -9,7 +9,19 @@ class_name Controls
 const DIRS := ["up", "right", "down", "left"]  # answer slots, as the D-pad
 
 
+static var _ready := false
+
+
 static func setup() -> void:
+	if _ready:
+		return
+	_ready = true
+	# Godot's menu actions have no gamepad buttons: A / Cross picks, B / Circle goes back
+	for pair in [["ui_accept", JOY_BUTTON_A], ["ui_cancel", JOY_BUTTON_B]]:
+		var b := InputEventJoypadButton.new()
+		b.button_index = pair[1]
+		b.device = -1
+		InputMap.action_add_event(pair[0], b)
 	for p in 4:
 		var dev := -1 if p == 0 else p  # (-1: every device)
 		var k := p == 0
@@ -75,3 +87,32 @@ static func read(p: int) -> Dictionary:
 static func rumble(weak: float, strong: float, seconds: float) -> void:
 	for d in Input.get_connected_joypads():
 		Input.start_joy_vibration(d, weak, strong, seconds)
+
+
+## "ps", "xbox" or "keys": which button names to show.
+static func style() -> String:
+	var pads := Input.get_connected_joypads()
+	if pads.is_empty():
+		return "keys"
+	var n := Input.get_joy_name(pads[0]).to_lower()
+	for w in ["ps3", "ps4", "ps5", "dualsense", "dualshock", "sony", "playstation", "wireless controller"]:
+		if w in n:
+			return "ps"
+	return "xbox"
+
+
+## The button to press for a job, in the player's controller's own names.
+static func glyph(job: String) -> String:
+	var g := {
+		"accept": {"ps": "✕", "xbox": "A", "keys": "Enter"},
+		"back": {"ps": "○", "xbox": "B", "keys": "Esc"},
+		"restart": {"ps": "△", "xbox": "Y", "keys": "R"},
+		"pause": {"ps": "Options", "xbox": "Menu", "keys": "Esc"},
+		"menu": {"ps": "Create", "xbox": "View", "keys": "M"},
+	}
+	return g[job][style()]
+
+
+static func is_menu_button(event: InputEvent) -> bool:
+	return (event is InputEventKey and event.pressed and event.physical_keycode == KEY_M) or \
+		(event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_BACK)
