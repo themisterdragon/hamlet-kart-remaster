@@ -3,7 +3,8 @@ extends Node3D
 ## the chase camera and the HUD. Mirrors the N64's race_start/race_update.
 ## Test args (after --): --track=N  --class=0..2  --autotest (a robot drives
 ## and answers, for screenshots)  --ask (a question 1 s after GO)  --laps=N
-## --items (the player gets each item in turn every 4 s)  --touch (phone controls).
+## --items (the player gets each item in turn every 4 s)  --touch (phone controls)
+## --click-answer=N (with --ask: click answer box N with the mouse).
 
 var LAPS := 4  # (--laps=N in test runs)
 const BOX_ROWS := [0.14, 0.47, 0.76]
@@ -20,6 +21,7 @@ var race_time := 0.0
 var autotest := false
 var ask_test := false
 var item_test := false
+var click_test := -1  # (test) click this answer box with the mouse
 var item_test_next := 0
 var track_index := 6
 var finished_t := 0.0  # how long the player has been over the line
@@ -77,6 +79,8 @@ func _ready() -> void:
 			ask_test = true
 		elif arg == "--touch":
 			Controls.touch_mode = true
+		elif arg.begins_with("--click-answer="):
+			click_test = int(arg.substr(15))
 	track = Track.new()
 	add_child(track)
 	track.load_track(track_index)
@@ -281,6 +285,20 @@ func _process(delta: float) -> void:
 		if item_test and player.item == Kart.IT_NONE and player.roulette_t <= 0 and fmod(race_time, 4.0) < dt:
 			player.item = item_test_next % 7
 			item_test_next += 1
+		if click_test >= 0 and player.asking and race_time >= 2.0:  # a real mouse click on the box
+			var at := get_viewport().get_screen_transform() * hud.a_cells[click_test].get_global_rect().get_center()  # (window pixels)
+			for down in [true, false]:
+				var e := InputEventMouseButton.new()
+				e.button_index = MOUSE_BUTTON_LEFT
+				e.pressed = down
+				e.position = at
+				e.global_position = at
+				Input.parse_input_event(e)
+			print("clicked answer box ", click_test, " at ", at)
+			click_test = -2
+		elif click_test == -2 and not player.asking:
+			print("answered: slot ", player.answered, ", right: ", player.verdict_ok)
+			click_test = -1
 		if ask_test and race_time >= 1.0 and not player.asking and player.verdict_t <= 0 and player.right + player.wrong == 0:
 			player.start_question(Content.tracks[track_index])
 	var best := -INF

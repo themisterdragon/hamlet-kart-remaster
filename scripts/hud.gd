@@ -126,7 +126,8 @@ func setup(content_track: Dictionary, lap_count: int) -> void:
 	for i in 4:
 		var cell := PanelContainer.new()
 		cell.custom_minimum_size = Vector2(470, 120)  # (about 50 points tall on a phone)
-		cell.mouse_filter = Control.MOUSE_FILTER_STOP  # tap an answer (phones)
+		cell.mouse_filter = Control.MOUSE_FILTER_STOP  # click or tap an answer
+		cell.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		cell.gui_input.connect(func(e: InputEvent):
 			if e is InputEventMouseButton and e.pressed:
 				Controls.touch.answer = i)
