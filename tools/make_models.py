@@ -53,7 +53,10 @@ def write_glb(path, nv, nt, verts, tris):
         col += struct.pack("<4f", *v[6:9], 1.0)
         lo = [min(a, b) for a, b in zip(lo, v[0:3])]
         hi = [max(a, b) for a, b in zip(hi, v[0:3])]
-    idx = struct.pack("<%dI" % (3 * nt), *tris)
+    # sdfmesh winds clockwise; glTF's front faces are counter-clockwise (else
+    # the renderer culls the near side and the model looks see-through)
+    ccw = [tris[3 * t + k] for t in range(nt) for k in (0, 2, 1)]
+    idx = struct.pack("<%dI" % (3 * nt), *ccw)
     blobs = [pos, nrm, col, idx]
     offsets, buf = [], bytearray()
     for b in blobs:
