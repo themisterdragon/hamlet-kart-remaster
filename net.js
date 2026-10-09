@@ -1,5 +1,7 @@
 // Online class races: PeerJS (free public matchmaking + relay) carries
-// messages between browsers. Godot polls hk.poll() each frame; no names or
+// messages between browsers. The PeerJS library is bundled (peerjs.min.js,
+// MIT), so nothing outside this site is contacted until a race is hosted or
+// joined. See PRIVACY.md. Godot polls hk.poll() each frame; no names or
 // accounts, only a random race code.
 window.hk = (() => {
   const PREFIX = "hamlet-kart-remaster-";
