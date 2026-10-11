@@ -17,3 +17,4 @@ var host_peer := ""      # (players) the host's peer id
 var my_kart := 0         # (players) which kart is mine
 var players: Array = []  # (host) the lobby: [{peer, ch, kart}], the host is peer ""
 var low_quality := false  # set once if this computer can't keep up (scripts/race.gd)
+var intro_seen := -1     # the scene whose landmark flyover has played (racing it again skips it)

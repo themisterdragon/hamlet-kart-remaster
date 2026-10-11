@@ -25,6 +25,7 @@ var split_b := -1
 var split_peak := 0.0
 var theme: Dictionary
 var props: Array
+var prop_nodes: Array[Node3D] = []  # the scenery, in the same order as props
 var pads: Array = []  # boost pads: {seg, lat}
 var ramp := -1        # sample of the launch ramp, -1 if none
 var hazard_samples: Array[int] = []
@@ -418,7 +419,63 @@ func _ground() -> void:
 	add_child(mi)
 
 
+## Each scene's three landmarks, for the race's opening flyover and the
+## scene list: its set pieces (one-offs first), then the things that move
+## in the road, then its own scenery, and the castle if that's still short.
+## In lap order, the castle (in the middle of every loop) last.
+## Returns [{prop, name, prop_index (into props) or hazard (index), sample}].
+const LANDMARK_NAMES := {
+	"CASTLE": "Elsinore Castle", "ROOSTER": "The Cock Crows", "BANNER": "The Royal Banner",
+	"THRONE": "The Throne of Denmark", "CROWN": "The Crown", "TOMB": "The Royal Tomb",
+	"SHIP": "The Ship", "GHOST": "The Ghost", "SWORDS": "The Swords", "LETTER": "The Letter",
+	"STAGE": "The Players' Stage", "GOBLET": "The Goblet", "SKULLS": "The Skulls",
+	"WORM": "The Worm", "HILL": "The Hill", "TABLE": "The Feast", "BARREL": "The Barrels",
+	"CHAPEL": "The Chapel", "BOOKS": "The Books", "SPYBUSH": "The Spying Bushes",
+	"TENT": "Fortinbras's Tents", "FLOWERS": "The Flowers", "WILLOW": "The Willow",
+	"ARRAS": "The Arras", "PORTRAIT": "The Two Portraits", "CENSER": "The Censers",
+	"TOWER": "The Towers", "ICEROCK": "The Ice", "TORCH": "The Torches", "PINE": "The Pines",
+}
+const SCENERY := ["PINE", "SNOWPINE", "TORCH", "ICEROCK", "TOWER", "BANNER"]  # too common to be a landmark
+
+
+static func landmarks(i: int) -> Array:
+	var t: Dictionary = data().tracks[i]
+	var count := {}
+	for p in t.props:
+		count[p.prop] = count.get(p.prop, 0) + 1
+	var picks: Array = []
+	var taken := {}
+	var pick := func(d: Dictionary) -> void:
+		if picks.size() < 3 and not taken.has(d.prop):
+			taken[d.prop] = true
+			d.name = LANDMARK_NAMES.get(d.prop, d.prop.capitalize())
+			picks.append(d)
+	var rare := count.keys().filter(func(k): return not k in SCENERY and k != "CASTLE")
+	rare.sort_custom(func(a, b): return count[a] < count[b])  # one-offs first
+	var biggest := func(k: String) -> int:
+		var best := -1
+		for j in t.props.size():
+			if t.props[j].prop == k and (best < 0 or float(t.props[j].scale) > float(t.props[best].scale)):
+				best = j
+		return best
+	for k in rare.filter(func(k): return count[k] <= 3):  # the set pieces
+		var j: int = biggest.call(k)
+		pick.call({"prop": k, "prop_index": j, "sample": int(t.props[j].sample)})
+	for j in t.hazards.size():  # things in the road
+		pick.call({"prop": t.hazards[j].prop, "hazard": j, "sample": int(float(t.hazards[j].at) * t.points.size())})
+	var themed := rare.filter(func(k): return count[k] > 3)
+	themed.reverse()  # the most of, first
+	for k in themed:  # the scene's own scenery
+		var j: int = biggest.call(k)
+		pick.call({"prop": k, "prop_index": j, "sample": int(t.props[j].sample)})
+	if count.has("CASTLE"):
+		pick.call({"prop": "CASTLE", "prop_index": biggest.call("CASTLE"), "sample": 1 << 20})
+	picks.sort_custom(func(a, b): return a.sample < b.sample)
+	return picks
+
+
 func _props() -> void:
+	prop_nodes.clear()
 	for p in props:
 		var node := Props.make(p.prop, theme)
 		node.scale = Vector3.ONE * float(p.scale)
@@ -430,3 +487,4 @@ func _props() -> void:
 			node.position = at
 			node.rotation.y = yaw_at(s)
 		add_child(node)
+		prop_nodes.append(node)

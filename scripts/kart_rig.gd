@@ -92,8 +92,8 @@ void fragment() {
 	ALBEDO = col;
 	ROUGHNESS = mix(0.6, 0.32, gloss);
 	SPECULAR = 0.5;
-	RIM = 0.2;
-	RIM_TINT = 0.6;
+	RIM = 0.08;
+	RIM_TINT = 0.3;
 }
 """
 	return _shader

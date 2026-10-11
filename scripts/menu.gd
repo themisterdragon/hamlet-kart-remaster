@@ -13,19 +13,34 @@ var lobby_label: Label
 var status_label: Label
 var code_edit: LineEdit
 var hello_sent := false
+var bg: TextureRect
+var logo: TextureRect
+var hints: Label  # the footer: which button does what
+var clock := 0.0
 
 
 func _ready() -> void:
 	Controls.setup()
 	Sound.race_over()
 	Sound.music("title")
-	var bg := TextureRect.new()
+	bg = TextureRect.new()  # the title art, drifting slowly
 	bg.texture = load("res://assets/images/title_bg.png")
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	bg.modulate = Color(0.45, 0.45, 0.55)
+	bg.modulate = Color(0.55, 0.55, 0.66)
 	add_child(bg)
+	add_child(UiKit.vignette())
+	add_child(UiKit.dust())
+	hints = Label.new()
+	hints.add_theme_font_override("font", body)
+	hints.add_theme_font_size_override("font_size", 26)
+	hints.add_theme_color_override("font_color", Color(1, 1, 1, 0.8))
+	hints.add_theme_color_override("font_outline_color", Color(0.02, 0.02, 0.07))
+	hints.add_theme_constant_override("outline_size", 6)
+	add_child(hints)
+	hints.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT, Control.PRESET_MODE_MINSIZE, 28)
+	hints.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	page = VBoxContainer.new()
 	page.set_anchors_preset(Control.PRESET_FULL_RECT)
 	page.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -51,8 +66,23 @@ func _ready() -> void:
 
 func _clear() -> void:
 	in_garage = false
+	pv_model = null
 	for c in page.get_children():
+		page.remove_child(c)
 		c.queue_free()
+	_reveal.call_deferred()
+
+
+## A new page fades up, its buttons one after another.
+func _reveal() -> void:
+	page.modulate.a = 0.0  # (no slide: moving the full-screen page upsets its layout)
+	create_tween().tween_property(page, "modulate:a", 1.0, 0.22)
+	var i := 0
+	for b in page.find_children("*", "Button", true, false):
+		if i < 18:
+			b.modulate.a = 0.0
+			create_tween().tween_property(b, "modulate:a", 1.0, 0.18).set_delay(0.05 + i * 0.03)
+		i += 1
 
 
 func _text(t: String, font: Font, size: int, color := Color.WHITE) -> Label:
@@ -66,6 +96,11 @@ func _text(t: String, font: Font, size: int, color := Color.WHITE) -> Label:
 	l.add_theme_color_override("font_outline_color", Color(0.05, 0.05, 0.1))
 	l.add_theme_constant_override("outline_size", maxi(size / 7, 6))
 	page.add_child(l)
+	if font == title_font:  # a heading: a soft shadow and a gold rule under it
+		l.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.55))
+		l.add_theme_constant_override("shadow_offset_y", 5)
+		l.add_theme_constant_override("shadow_outline_size", maxi(size / 7, 6))
+		page.add_child(UiKit.Rule.new(560))
 	return l
 
 
@@ -76,19 +111,7 @@ func _button(t: String, on_press: Callable, parent: Node = null) -> Button:
 	b.add_theme_font_size_override("font_size", 40)
 	b.custom_minimum_size = Vector2(560, 76)
 	b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.08, 0.1, 0.22, 0.85)
-	sb.border_color = Color("f2c94c")
-	sb.set_border_width_all(3)
-	sb.set_corner_radius_all(14)
-	sb.set_content_margin_all(10)
-	b.add_theme_stylebox_override("normal", sb)
-	var hi := sb.duplicate()
-	hi.bg_color = Color(0.45, 0.3, 0.05, 0.95)
-	hi.set_border_width_all(5)
-	b.add_theme_stylebox_override("hover", hi)
-	b.add_theme_stylebox_override("focus", hi)
-	b.add_theme_stylebox_override("pressed", hi)
+	UiKit.style_button(b)
 	b.pressed.connect(func():
 		Sound.sfx("select")
 		on_press.call())
@@ -109,13 +132,15 @@ func _focus_first() -> void:
 func _title() -> void:
 	_clear()
 	Game.mode = Game.Mode.SOLO
-	var logo := TextureRect.new()
+	logo = TextureRect.new()
 	logo.texture = load("res://assets/images/logo.png")
+	logo.material = UiKit.shine()
 	logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	logo.custom_minimum_size = Vector2(900, 300)
 	logo.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	page.add_child(logo)
+	page.add_child(UiKit.Rule.new(640))
 	var build := FileAccess.get_file_as_string("res://data/build.txt").strip_edges()
 	if build != "":  # which build this is, to tell old cached copies apart
 		var v := Label.new()
@@ -126,7 +151,9 @@ func _title() -> void:
 		v.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, 16)
 		v.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 		v.grow_vertical = Control.GROW_DIRECTION_BEGIN
-		add_child(v)
+		v.name = "Build"
+		if not has_node("Build"):
+			add_child(v)
 	_button("Solo Race", func(): _characters(_tracks))
 	if Net.available():
 		_button("Host a Class Race", func():
@@ -198,7 +225,7 @@ func _characters(next: Callable) -> void:
 		b.mouse_entered.connect(func(): b.grab_focus())
 	var side := _preview_panel()
 	row.add_child(side)
-	var garage := _button("Build your kart", func(): _garage(focus_char), side)
+	var garage := _button("Build your kart", func(): _garage(focus_char), side.get_child(0))  # (under the card's stats)
 	garage.custom_minimum_size = Vector2(420, 70)
 	garage.add_theme_font_size_override("font_size", 32)
 	await get_tree().process_frame
@@ -213,63 +240,112 @@ var pv_root: Node3D
 var pv_model: Node3D
 var pv_name: Label
 var pv_tag: Label
-var pv_stats: Label
+var pv_stats: UiKit.StatBars
 
 
 func _preview_panel() -> Control:
+	var card := PanelContainer.new()  # a framed card, like a trading card
+	var cs := StyleBoxFlat.new()
+	cs.bg_color = Color(UiKit.NAVY, 0.72)
+	cs.border_color = UiKit.GOLD_SOFT
+	cs.set_border_width_all(2)
+	cs.set_corner_radius_all(26)
+	cs.set_content_margin_all(18)
+	cs.shadow_color = Color(0, 0, 0, 0.5)
+	cs.shadow_size = 16
+	card.add_theme_stylebox_override("panel", cs)
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 6)
+	box.add_theme_constant_override("separation", 4)
+	card.add_child(box)
+	var stage := Control.new()  # a soft gold glow behind the racer
+	stage.custom_minimum_size = Vector2(560, 390)
+	var glow := TextureRect.new()
+	var gt := GradientTexture2D.new()
+	gt.fill = GradientTexture2D.FILL_RADIAL
+	gt.fill_from = Vector2(0.5, 0.55)
+	gt.fill_to = Vector2(0.5, 0.05)
+	gt.width = 128
+	gt.height = 128
+	var g := Gradient.new()
+	g.set_color(0, Color(1.0, 0.8, 0.35, 0.32))
+	g.set_color(1, Color(1.0, 0.8, 0.35, 0.0))
+	gt.gradient = g
+	glow.texture = gt
+	glow.set_anchors_preset(Control.PRESET_FULL_RECT)
+	glow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	stage.add_child(glow)
 	var vpc := SubViewportContainer.new()
 	vpc.stretch = true
-	vpc.custom_minimum_size = Vector2(560, 470)
+	vpc.set_anchors_preset(Control.PRESET_FULL_RECT)
 	var vp := SubViewport.new()
 	vp.own_world_3d = true
 	vp.transparent_bg = true
 	vp.msaa_3d = Viewport.MSAA_4X
 	vpc.add_child(vp)
+	stage.add_child(vpc)
 	pv_root = Node3D.new()
 	vp.add_child(pv_root)
 	var env := Environment.new()
 	env.background_mode = Environment.BG_CLEAR_COLOR
+	# linear and a low, cool fill, as on the track: filmic and a strong grey
+	# fill washed the racers' colours out
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color("9a98b0")
-	env.ambient_light_energy = 0.6
-	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.ambient_light_color = Color("8c88a8")
+	env.ambient_light_energy = 0.32
+	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	var we := WorldEnvironment.new()
 	we.environment = env
 	pv_root.add_child(we)
 	var key := DirectionalLight3D.new()  # a warm key light and a cool rim, like a studio portrait
 	key.rotation_degrees = Vector3(-35, 30, 0)
 	key.light_color = Color("fff0d8")
+	key.light_energy = 0.95
 	key.shadow_enabled = true
 	pv_root.add_child(key)
 	var rim := DirectionalLight3D.new()
 	rim.rotation_degrees = Vector3(-20, 200, 0)
 	rim.light_color = Color("9ab8ff")
-	rim.light_energy = 0.7
+	rim.light_energy = 0.55
 	pv_root.add_child(rim)
-	var podium := MeshInstance3D.new()  # a gold-rimmed podium to turn on
+	var podium := MeshInstance3D.new()  # a dark podium with a gold rim to turn on
 	var cyl := CylinderMesh.new()
 	cyl.top_radius = 34
 	cyl.bottom_radius = 36
 	cyl.height = 6
 	var pm := StandardMaterial3D.new()
-	pm.albedo_color = Color("3a2a5a")
-	pm.roughness = 0.4
+	pm.albedo_color = Color("2a2048")
+	pm.roughness = 0.35
 	cyl.material = pm
 	podium.mesh = cyl
 	podium.position.y = -3
 	pv_root.add_child(podium)
+	var ring := MeshInstance3D.new()
+	var tor := TorusMesh.new()
+	tor.inner_radius = 33.5
+	tor.outer_radius = 36.5
+	tor.rings = 48
+	tor.ring_segments = 8
+	var gm := StandardMaterial3D.new()
+	gm.albedo_color = Color("e0b040")
+	gm.metallic = 0.8
+	gm.roughness = 0.3
+	tor.material = gm
+	ring.mesh = tor
+	pv_root.add_child(ring)
 	var cam := Camera3D.new()
 	cam.fov = 40
 	pv_root.add_child(cam)
 	var eye := Vector3(0, 46, 128)
 	cam.transform = Transform3D(Basis.looking_at(Vector3(0, 19, 0) - eye), eye)  # (not in the tree yet)
-	box.add_child(vpc)
-	pv_name = _label_in(box, title_font, 54, Color("f2d27a"))
+	box.add_child(stage)
+	pv_name = _label_in(box, title_font, 58, UiKit.GOLD_PALE)
+	pv_name.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.55))
+	pv_name.add_theme_constant_override("shadow_offset_y", 4)
 	pv_tag = _label_in(box, body, 28, Color(1, 1, 1, 0.85))
-	pv_stats = _label_in(box, body, 28, Color.WHITE)
-	return box
+	box.add_child(UiKit.Rule.new(380))
+	pv_stats = UiKit.StatBars.new(body, KartBuild.STAT_NAMES)
+	box.add_child(pv_stats)
+	return card
 
 
 func _label_in(parent: Node, font: Font, size: int, color: Color) -> Label:
@@ -297,21 +373,21 @@ func _preview(ch: int, b: Dictionary = {}) -> void:
 	var c: Dictionary = Content.characters[ch]
 	pv_name.text = c.name
 	pv_tag.text = c.tag
-	pv_stats.text = _stat_lines(ch, b)
+	_show_stats(ch, b)
 
 
-## The racer's real handling with this build (KartBuild.stats) as 1-5 dots,
-## with a + or - where the parts change it.
-func _stat_lines(ch: int, b: Dictionary) -> String:
+## The racer's real handling with this build (KartBuild.stats) as 1-5 pips,
+## with ▲ or ▼ where the parts change it.
+func _show_stats(ch: int, b: Dictionary) -> void:
 	var st := KartBuild.stats(ch, b)
 	var base: Array = Kart.STATS[ch]
-	var lines := []
+	var values := []
+	var marks := []
 	for i in 4:
-		var d := KartBuild.dots(i, st[i])
+		values.append(KartBuild.dots(i, st[i]))
 		var change: float = st[i] / base[i]
-		var mark := "  +" if change > 1.005 else ("  −" if change < 0.995 else "")
-		lines.append("%s  %s%s" % [KartBuild.STAT_NAMES[i], "●".repeat(d) + "○".repeat(5 - d), mark])
-	return "\n".join(lines)
+		marks.append("+" if change > 1.005 else ("-" if change < 0.995 else ""))
+	pv_stats.set_stats(values, marks)
 
 
 # ---------------------------------------------------------------- garage
@@ -406,8 +482,28 @@ func _garage_show() -> void:
 
 
 func _process(delta: float) -> void:
+	clock += delta
 	if pv_model and is_instance_valid(pv_model):
 		pv_model.rotation.y += delta * 0.9
+	# the title art drifts, the logo floats and a light crosses it now and then
+	bg.pivot_offset = bg.size / 2
+	bg.scale = Vector2.ONE * (1.07 + 0.025 * sin(clock * 0.09))
+	bg.position.x = 18 * sin(clock * 0.05)
+	var on_title := is_instance_valid(logo) and logo.is_inside_tree()
+	if on_title:
+		(logo.material as ShaderMaterial).set_shader_parameter("t", fmod(clock, 6.0) / 2.0 - 0.6)
+	UiKit.breathe(clock)
+	if Engine.get_process_frames() % 20 == 0:
+		_hints()
+
+
+## The footer: what the buttons do, named for the controller in use.
+func _hints() -> void:
+	if Controls.touch_mode:
+		hints.text = ""
+		return
+	var back := "" if is_instance_valid(logo) and logo.is_inside_tree() else "      %s  Back" % Controls.glyph("back")
+	hints.text = "%s  Choose%s" % [Controls.glyph("accept"), back]
 
 
 func _picked(ch: int) -> void:
@@ -419,19 +515,56 @@ func _picked(ch: int) -> void:
 
 func _tracks() -> void:
 	_clear()
-	_text("Choose a scene", title_font, 64, Color("f2d27a"))
+	_text("Choose a scene", title_font, 64, UiKit.GOLD_PALE)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 36)
+	page.add_child(row)
 	var grid := GridContainer.new()
 	grid.columns = 4
-	grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	grid.add_theme_constant_override("h_separation", 12)
 	grid.add_theme_constant_override("v_separation", 12)
-	page.add_child(grid)
+	row.add_child(grid)
+	# the scene card: where it is in the play and the landmarks you'll pass
+	var card := PanelContainer.new()
+	var cs := StyleBoxFlat.new()
+	cs.bg_color = Color(UiKit.NAVY, 0.78)
+	cs.border_color = UiKit.GOLD_SOFT
+	cs.set_border_width_all(2)
+	cs.set_corner_radius_all(24)
+	cs.set_content_margin_all(26)
+	cs.shadow_color = Color(0, 0, 0, 0.5)
+	cs.shadow_size = 16
+	card.add_theme_stylebox_override("panel", cs)
+	card.custom_minimum_size = Vector2(500, 560)
+	var info := VBoxContainer.new()
+	info.add_theme_constant_override("separation", 8)
+	card.add_child(info)
+	row.add_child(card)
+	var act := _label_in(info, body, 30, UiKit.GOLD_PALE)
+	var name := _label_in(info, title_font, 56, Color.WHITE)
+	name.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	name.custom_minimum_size.x = 440
+	info.add_child(UiKit.Rule.new(380))
+	var head := _label_in(info, chunky, 30, UiKit.GOLD_PALE)
+	head.text = "Landmarks on the way"
+	var marks := _label_in(info, body, 32, Color.WHITE)
+	var show := func(i: int) -> void:
+		var t: Dictionary = Content.tracks[i]
+		act.text = "%s · %s" % [Content.acts[int(t.act)].name, t.scenes]
+		name.text = t.name
+		marks.text = "\n".join(Track.landmarks(i).map(func(l): return "◆  " + l.name))
 	for i in Content.tracks.size():
 		var t: Dictionary = Content.tracks[i]
 		var b := _button("%s\n%s" % [Content.acts[int(t.act)].name, t.name], func(): _track_picked(i), grid)
-		b.custom_minimum_size = Vector2(420, 96)
+		b.custom_minimum_size = Vector2(318, 104)
 		b.add_theme_font_size_override("font_size", 26)
-	_focus_first()
+		b.focus_entered.connect(func(): show.call(i))
+	show.call(Game.track)
+	await get_tree().process_frame
+	var buttons := grid.get_children()
+	if Game.track < buttons.size():
+		buttons[Game.track].grab_focus()
 
 
 func _track_picked(i: int) -> void:

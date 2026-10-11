@@ -5,7 +5,9 @@ extends Node3D
 ## and answers, for screenshots)  --ask (a question 1 s after GO)  --laps=N
 ## --items (the player gets each item in turn every 4 s)  --touch (phone controls)
 ## --click-answer=N (with --ask: click answer box N with the mouse)
+## --tap-answer=N (with --ask --touch: hold gas with one finger, tap box N with another)
 ## --view=hazardN / --view=clutterN (the camera watches that obstacle).
+## --intro (play the landmark flyover even in a test run).
 
 var LAPS := 4  # (--laps=N in test runs)
 const BOX_ROWS := [0.14, 0.47, 0.76]
@@ -23,10 +25,19 @@ var autotest := false
 var ask_test := false
 var item_test := false
 var click_test := -1  # (test) click this answer box with the mouse
+var tap_test := false  # (test) ...or tap it with a second finger while the first holds gas
 var view_test := ""   # (test) the camera watches an obstacle
 var item_test_next := 0
 var track_index := 6
 var finished_t := 0.0  # how long the player has been over the line
+
+# the opening flyover: the camera visits the scene's three landmarks
+# (Track.landmarks) before the countdown; any button skips it
+const SHOT_LEN := 2.8
+const SHOT_FADE := 0.3
+var intro: Array = []  # [{name, node}]
+var intro_t := -1.0    # -1: no flyover (or it's over)
+var intro_skip := false
 
 var cam: Camera3D
 var cam_yaw := 0.0
@@ -83,8 +94,14 @@ func _ready() -> void:
 			Controls.touch_mode = true
 		elif arg.begins_with("--click-answer="):
 			click_test = int(arg.substr(15))
+		elif arg.begins_with("--tap-answer="):
+			click_test = int(arg.substr(13))
+			tap_test = true
 		elif arg.begins_with("--view="):
 			view_test = arg.substr(7)
+		elif arg == "--intro":
+			Game.intro_seen = -1
+			intro_t = 0.0
 	track = Track.new()
 	add_child(track)
 	track.load_track(track_index)
@@ -144,6 +161,72 @@ func _ready() -> void:
 	touch = TouchControls.new()
 	add_child(touch)
 	hud.setup(Content.tracks[track_index], LAPS)
+	var tests := autotest or ask_test or item_test or click_test >= 0 or view_test != ""
+	if (intro_t == 0.0 or not tests) and Game.intro_seen != track_index:
+		_start_intro()
+
+
+## The flyover's shots: each landmark's node (scenery or a hazard).
+func _start_intro() -> void:
+	Game.intro_seen = track_index  # racing the same scene again goes straight to the grid
+	for lm in Track.landmarks(track_index):
+		var node: Node3D = obstacles.hazards[lm.hazard].node if lm.has("hazard") else track.prop_nodes[lm.prop_index]
+		intro.append({"name": lm.name, "node": node})
+	intro_t = 0.0 if intro.size() > 0 else -1.0
+	hud.set_intro(intro_t >= 0)
+	touch.visible = false
+
+
+func _end_intro() -> void:
+	intro_t = -1.0
+	hud.set_intro(false)
+	touch.visible = Controls.touch_mode
+	_camera(1.0)
+	hud.fade.color.a = 1.0  # up from black onto the grid
+	create_tween().tween_property(hud.fade, "color:a", 0.0, 0.45)
+
+
+## One frame of the flyover. Each shot circles slowly round its landmark,
+## framed by its size, from the side the road passes; the picture dips to
+## black between shots and into the grid.
+func _intro_frame(delta: float) -> void:
+	intro_t += minf(delta, 0.1)
+	var shot := int(intro_t / SHOT_LEN)
+	if intro_skip or shot >= intro.size():
+		intro_skip = false
+		_end_intro()
+		return
+	var u := fmod(intro_t, SHOT_LEN) / SHOT_LEN
+	var node: Node3D = intro[shot].node
+	var box := AABB()
+	var first := true
+	for mi in node.find_children("*", "MeshInstance3D", true, false):
+		var b: AABB = mi.global_transform * mi.get_aabb()
+		box = b if first else box.merge(b)
+		first = false
+	if first:
+		box = AABB(node.global_position, Vector3.ONE * 40)
+	var size := clampf(box.size.length(), 90.0, 1400.0)
+	var at := box.get_center()
+	# start from the road's side of it, then swing round a little
+	var road := track.point(track.locate_global(at.x, at.z), 0, 0)
+	var from := Vector2(road.x - at.x, road.z - at.z).normalized()
+	if from == Vector2.ZERO:
+		from = Vector2(0, 1)
+	var ang := from.angle() - 0.45 + u * 0.9 * (1 if shot % 2 == 0 else -1)
+	var dist := (size * 1.25 + 90) * (1.0 - u * 0.12)  # a slow push in
+	cam.fov = 50
+	cam.position = at + Vector3(cos(ang) * dist, size * 0.45 + 45, sin(ang) * dist)
+	cam.look_at(at - Vector3(0, size * 0.1, 0))  # (the landmark sits above its name)
+	var t := fmod(intro_t, SHOT_LEN)
+	var dark := clampf(maxf(1.0 - t / SHOT_FADE, (t - (SHOT_LEN - SHOT_FADE)) / SHOT_FADE), 0, 1)
+	hud.show_intro(intro[shot].name, shot, intro.size(), u, dark)
+	# the world keeps living meanwhile: hazards move, karts idle on the grid
+	obstacles.pose(intro_t, 1.0)
+	for k in karts:
+		k.show_between(1.0)
+		k.face(cam.global_position, minf(delta, 0.1))
+	hud.show_state(player, countdown, race_time, karts.size())
 
 
 func _environment() -> void:
@@ -165,7 +248,7 @@ func _environment() -> void:
 	env.glow_bloom = 0.04
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(th.ambient)
-	env.ambient_light_energy = 0.5
+	env.ambient_light_energy = 0.42  # a low fill: more keeps the cast pale and flat
 	env.fog_enabled = true
 	env.fog_mode = Environment.FOG_MODE_DEPTH
 	env.fog_light_color = Color(th.fog)
@@ -173,13 +256,15 @@ func _environment() -> void:
 	env.fog_depth_end = float(th.fog_rng[1]) * 2.2
 	env.fog_density = 1.0
 	env.fog_sky_affect = 0.35
-	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	# linear, not filmic: filmic bleached the clay's colours (skin turned
+	# white); the scenes are lit to stay in range instead
+	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
 	sun = DirectionalLight3D.new()
 	sun.light_color = Color(th.sun)
-	sun.light_energy = 0.85
+	sun.light_energy = 0.95
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 900
 	sun.rotation_degrees = Vector3(-55, 35, 0)
@@ -230,6 +315,12 @@ func _boxes() -> void:
 
 ## Pause (Esc / Start), and after the finish: next track or race again.
 func _unhandled_input(event: InputEvent) -> void:
+	if intro_t >= 0:  # any button, key, click or tap skips the flyover
+		if event.is_action_pressed("ui_accept") or event.is_action_pressed("p0_gas") or \
+				(event is InputEventScreenTouch and event.pressed) or (event is InputEventMouseButton and event.pressed):
+			intro_skip = true
+			get_viewport().set_input_as_handled()
+			return
 	var start: bool = event.is_action_pressed("ui_cancel") or (event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_START)
 	if online:
 		# no pausing a shared race; after it, the host takes everyone back to the lobby
@@ -283,6 +374,12 @@ var pad_in := {}  # player 1's controls, presses held until a step reads them
 func _process(delta: float) -> void:
 	if get_tree().paused:
 		return
+	if intro_t >= 0:
+		if Game.mode == Game.Mode.CLIENT and online and snap_new and float(snap.cd) < 3.9:
+			_end_intro()  # (player) the host's race has begun
+		else:
+			_intro_frame(delta)
+			return
 	if Game.mode == Game.Mode.CLIENT and online:
 		_client_process(minf(delta, 1.0 / 20))
 		return
@@ -342,7 +439,15 @@ func _step(dt: float) -> void:
 		if item_test and player.item == Kart.IT_NONE and player.roulette_t <= 0 and fmod(race_time, 4.0) < dt:
 			player.item = item_test_next % 7
 			item_test_next += 1
-		if click_test >= 0 and player.asking and race_time >= 2.0:  # a real mouse click on the box
+		if tap_test and click_test >= 0 and race_time >= 0.5 and race_time < 0.6:  # finger 0 down on gas
+			_touch(0, get_viewport().get_screen_transform() * (touch.pads.filter(func(p): return p.name == "gas")[0].button.position + Vector2(150, 150)), true)
+		if click_test >= 0 and player.asking and race_time >= 2.0 and tap_test:  # finger 1 taps the box
+			var at := get_viewport().get_screen_transform() * hud.a_cells[click_test].get_global_rect().get_center()
+			_touch(1, at, true)
+			_touch(1, at, false)
+			print("tapped answer box ", click_test, " with finger 1; gas held: ", Input.is_action_pressed("p0_gas"))
+			click_test = -2
+		elif click_test >= 0 and player.asking and race_time >= 2.0:  # a real mouse click on the box
 			var at := get_viewport().get_screen_transform() * hud.a_cells[click_test].get_global_rect().get_center()  # (window pixels)
 			for down in [true, false]:
 				var e := InputEventMouseButton.new()
@@ -355,6 +460,8 @@ func _step(dt: float) -> void:
 			click_test = -2
 		elif click_test == -2 and not player.asking:
 			print("answered: slot ", player.answered, ", right: ", player.verdict_ok)
+			if tap_test:
+				print("gas still held after the question: ", Input.is_action_pressed("p0_gas"))
 			click_test = -1
 		if ask_test and race_time >= 1.0 and not player.asking and player.verdict_t <= 0 and player.right + player.wrong == 0:
 			player.start_question(Content.tracks[track_index])
@@ -825,7 +932,8 @@ func _client_process(dt: float) -> void:
 		_show_items(snap.ps, snap.ds)
 		obstacles.apply(snap.get("lo", []))
 	else:
-		countdown = maxf(countdown - dt, 0) if countdown > 0 else countdown
+		if countdown < 3.9:  # (not before the host's countdown has begun: it may still be in its flyover)
+			countdown = maxf(countdown - dt, 0) if countdown > 0 else countdown
 		if countdown <= 0:
 			race_time += dt
 	for k in karts:
@@ -868,6 +976,15 @@ func _show_items(ps: Array, ds: Array) -> void:
 		sp.position = Vector3(d[0], d[1] + 10, d[2])
 		add_child(sp)
 		_shown.append(sp)
+
+
+## (test) A finger touching the screen at a window pixel.
+func _touch(index: int, at: Vector2, down: bool) -> void:
+	var e := InputEventScreenTouch.new()
+	e.index = index
+	e.position = at
+	e.pressed = down
+	Input.parse_input_event(e)
 
 
 ## A tapped choice on the pause or results screen (phones).

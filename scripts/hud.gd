@@ -26,6 +26,10 @@ const BOX_RIGHT := Color("1e7a3c")   # white text on it: 5.4:1
 const BOX_WRONG := Color("a8323a")   # white text on it: 6.3:1
 var shown_q := ""
 var touch_layout := false  # place moved clear of the touch buttons
+var quiz_touch := false    # answers in a column on the left (phones)
+var grid: GridContainer    # the answers as a D-pad diamond
+var column: VBoxContainer  # the answers in a column
+var quiz_open := false
 var results_up := false
 var item_box: PanelContainer
 var item_icon: TextureRect
@@ -118,20 +122,17 @@ func setup(content_track: Dictionary, lap_count: int) -> void:
 	q_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	q_label.custom_minimum_size.x = 1100
 	box.add_child(q_label)
-	var grid := GridContainer.new()
+	grid = GridContainer.new()
 	grid.columns = 3
 	grid.add_theme_constant_override("h_separation", 16)
 	grid.add_theme_constant_override("v_separation", 10)
-	var cells_by_slot: Array[Control] = []
 	for i in 4:
 		var cell := PanelContainer.new()
-		cell.custom_minimum_size = Vector2(470, 120)  # (about 50 points tall on a phone)
 		cell.mouse_filter = Control.MOUSE_FILTER_STOP  # click or tap an answer
 		cell.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		cell.gui_input.connect(func(e: InputEvent):
 			if e is InputEventMouseButton and e.pressed:
 				Controls.touch.answer = i)
-		cell.pivot_offset = Vector2(235, 60)
 		var row := HBoxContainer.new()
 		row.alignment = BoxContainer.ALIGNMENT_CENTER
 		row.add_theme_constant_override("separation", 12)
@@ -145,18 +146,14 @@ func setup(content_track: Dictionary, lap_count: int) -> void:
 		a_arrows.append(arrow)
 		a_labels.append(a)
 		a_cells.append(cell)
-		cells_by_slot.append(cell)
-	# up / left, right / down, in a diamond
-	var cells := [null, cells_by_slot[0], null, cells_by_slot[3], null, cells_by_slot[1], null, cells_by_slot[2], null]
-	for c in cells:
-		grid.add_child(c if c else Control.new())
 	box.add_child(grid)
+	column = VBoxContainer.new()  # (phones) the same boxes in a column, for the left thumb
+	column.add_theme_constant_override("separation", 12)
+	box.add_child(column)
 	panel.add_child(box)
 	panel.visible = false
 	root.add_child(panel)
-	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 150)
-	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_quiz_layout()
 
 	# pause and results: one centred panel
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -180,6 +177,115 @@ func setup(content_track: Dictionary, lap_count: int) -> void:
 	ov.add_child(overlay_buttons)
 	overlay.visible = false
 	root.add_child(overlay)
+	_intro_nodes()
+
+
+## The quiz panel's two shapes. Pad and keyboard: a D-pad diamond in the
+## middle, arrows showing which way picks which. Phones: one column at the
+## bottom left, where the left thumb rests (the steering buttons step aside),
+## so the right thumb can keep holding gas.
+func _quiz_layout() -> void:
+	quiz_touch = Controls.touch_mode
+	var slots := [0, 3, 1, 2] if quiz_touch else []  # up, left, right, down as read down the column
+	for i in 4:
+		var cell := a_cells[i]
+		if cell.get_parent():
+			cell.get_parent().remove_child(cell)
+		a_arrows[i].visible = not quiz_touch
+	for c in grid.get_children():
+		c.queue_free()
+	grid.visible = not quiz_touch
+	column.visible = quiz_touch
+	if quiz_touch:
+		for i in slots:
+			a_cells[i].custom_minimum_size = Vector2(820, 104)
+			a_cells[i].pivot_offset = Vector2(410, 52)
+			column.add_child(a_cells[i])
+		q_label.custom_minimum_size.x = 820
+		q_label.add_theme_font_size_override("font_size", 36)
+		panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT, Control.PRESET_MODE_MINSIZE, 32)
+		panel.grow_horizontal = Control.GROW_DIRECTION_END
+	else:
+		# up / left, right / down, in a diamond
+		for c in [null, a_cells[0], null, a_cells[3], null, a_cells[1], null, a_cells[2], null]:
+			if c:
+				c.custom_minimum_size = Vector2(470, 120)  # (about 50 points tall on a phone)
+				c.pivot_offset = Vector2(235, 60)
+			grid.add_child(c if c else Control.new())
+		q_label.custom_minimum_size.x = 1100
+		q_label.add_theme_font_size_override("font_size", 40)
+		panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 150)
+		panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	panel.reset_size()
+
+
+## Phones: an answer tapped by any finger. (Godot only turns the first finger
+## into a mouse click, and that finger is often on the gas.)
+func _input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch and event.pressed and quiz_open:
+		for i in 4:
+			if a_cells[i].is_visible_in_tree() and a_cells[i].get_global_rect().has_point(event.position):
+				Controls.touch.answer = i
+				get_viewport().set_input_as_handled()
+				return
+
+
+# ------------------------------------------------ the opening flyover
+
+var intro_box: VBoxContainer
+var intro_name: Label
+var intro_count: Label
+var intro_skip: Label
+var fade: ColorRect
+
+
+func _intro_nodes() -> void:
+	fade = ColorRect.new()  # dips to black between shots
+	fade.color = Color(0.02, 0.02, 0.06, 0)
+	fade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(fade)
+	intro_box = VBoxContainer.new()  # the landmark's name, low on the screen like a film title
+	intro_box.add_theme_constant_override("separation", -6)
+	intro_count = _label(body, 30, Color("f2d27a"))
+	intro_name = _label(title, 92, Color.WHITE)
+	for l in [intro_count, intro_name]:
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		intro_box.add_child(l)
+	add_child(intro_box)
+	intro_box.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 110)
+	intro_box.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	intro_box.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	intro_skip = _label(body, 28, Color(1, 1, 1, 0.75))
+	add_child(intro_skip)
+	intro_skip.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, 40)
+	intro_skip.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	intro_skip.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	set_intro(false)
+
+
+## The flyover: the race HUD steps aside for the scene's title and each
+## landmark's name.
+func set_intro(on: bool) -> void:
+	for n in [lap_label, time_label, place_label, item_box, count_label]:
+		n.visible = not on
+	intro_box.visible = on
+	intro_skip.visible = on
+	intro_skip.text = "%s  Skip" % ("Tap" if Controls.touch_mode else Controls.glyph("accept"))
+	if not on:
+		fade.color.a = 0
+
+
+## One frame of the flyover: which landmark (shot of shots) and how far into
+## its shot (0-1); the name slides in and the picture dips to black at the cuts.
+func show_intro(name: String, shot: int, shots: int, u: float, dark: float) -> void:
+	intro_count.text = "Landmark %d of %d" % [shot + 1, shots]
+	intro_name.text = name
+	var a := clampf(minf(u * 5.0, (1.0 - u) * 6.0), 0, 1)
+	intro_box.modulate.a = a
+	intro_name.position.x = (1.0 - a) * -40
+	fade.color.a = dark
 
 
 func _label(font: Font, size: int, color: Color) -> Label:
@@ -227,10 +333,13 @@ func show_state(k: Kart, countdown: float, time: float, racers: int) -> void:
 		item_icon.modulate = Color(1, 1, 1, 0.5) if k.holding else Color.WHITE
 	else:
 		item_icon.texture = null
-	card.position.y = 190  # below the item slot
+	card.position.y = 40 if intro_box.visible else 190  # below the item slot (none in the flyover)
 
 	var asking := k.asking or k.verdict_t > 0
+	if Controls.touch_mode != quiz_touch:
+		_quiz_layout()
 	panel.visible = asking
+	quiz_open = k.asking
 	if not asking:
 		shown_q = ""
 		return
@@ -278,6 +387,8 @@ func _show_overlay(text: String, choices: Array = []) -> void:
 			b.add_theme_font_override("font", chunky)
 			b.add_theme_font_size_override("font_size", 40)
 			b.custom_minimum_size = Vector2(260, 90)
+			UiKit.style_button(b)
+			b.focus_mode = Control.FOCUS_NONE  # (tapped, not chosen)
 			b.pressed.connect(func(): choice.emit(c[1]))
 			overlay_buttons.add_child(b)
 	overlay.visible = true

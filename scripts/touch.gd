@@ -4,7 +4,7 @@ extends CanvasLayer
 ## actions as the keyboard and gamepad, so steering, gas (and the rocket
 ## start), drift, items and pause all work the same way. Shown after the
 ## first touch; hidden again by keys or a pad. Quiz answers are tapped in
-## the quiz panel (scripts/hud.gd).
+## the quiz panel (scripts/hud.gd), on the left, by any finger.
 ##
 ## Accessible by design: large targets (the smallest is about 2x the 44 px
 ## minimum on a phone), white text on solid navy (over 12:1), a gold rim
@@ -121,9 +121,10 @@ func _input(event: InputEvent) -> void:
 		visible = false
 
 
-## Driving buttons hide while a question is up (the kart drives itself and
-## the answers need the room); pause stays.
+## While a question is up the left-thumb buttons hide: the answers take
+## their place, for the left thumb to tap. Gas and brake stay under the right
+## thumb (a hidden button lets go), so gas can be held through the question.
 func set_driving(on: bool) -> void:
 	for p in pads:
-		if p.name != "pause":
+		if p.name in ["left", "right", "drift", "item"]:
 			p.button.visible = on

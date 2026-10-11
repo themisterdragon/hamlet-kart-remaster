@@ -13,6 +13,6 @@ static func clay() -> StandardMaterial3D:
 		_mat.roughness = 0.6
 		_mat.specular_mode = BaseMaterial3D.SPECULAR_SCHLICK_GGX
 		_mat.rim_enabled = true  # a soft rim light, like the sprites had
-		_mat.rim = 0.2
-		_mat.rim_tint = 0.6
+		_mat.rim = 0.08  # (stronger, it greys the colours out)
+		_mat.rim_tint = 0.3
 	return _mat
