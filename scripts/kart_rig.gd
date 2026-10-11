@@ -5,7 +5,7 @@ extends Node3D
 ## sliding a few nodes (no skeletons, no per-vertex work), so it's cheap:
 ## wheels roll and the front pair steers, the body pitches under gas and
 ## brakes, rolls in bends and settles after a landing, the rider leans into
-## the turn and sways a beat behind. Far from the camera each part swaps to
+## the turn (hard over into a drift, toward its side) and sways a beat behind. Far from the camera each part swaps to
 ## a light copy, and shadows always come from the light copies.
 
 const NEAR := 420.0  # beyond this the light copies show
@@ -30,6 +30,7 @@ var pitch := Vector2.ZERO
 var roll := Vector2.ZERO
 var heave := Vector2.ZERO
 var sway := Vector2.ZERO   # the rider, a beat behind the body
+var lean := Vector2.ZERO   # the rider's lean: hard into a drift, a little into a turn
 var spin_a := 0.0
 var last_speed := 0.0
 var last_yaw := 0.0
@@ -198,6 +199,10 @@ func animate(dt: float, k: Kart) -> void:
 	var r_target := 0.0 if air else turn * 0.11
 	if k.spin_t > 0:
 		r_target = sin(t * 30) * 0.12
+	# the rider's lean (+ is to the right): hard over toward a drift's side
+	# (k.slide follows the drift, -1 left to 1 right), a little with the
+	# wheel otherwise; upright in the air and while spinning out
+	var l_target := 0.0 if air or k.spin_t > 0 else k.slide * 0.38 + k.steer * (1.0 - absf(k.slide)) * 0.12
 	# substeps keep the springs steady at low frame rates
 	var n := ceili(dt / (1.0 / 120))
 	var h := dt / n
@@ -209,6 +214,7 @@ func animate(dt: float, k: Kart) -> void:
 		roll = _spring(roll, r_target, h)
 		heave = _spring(heave, 0.0, h, 220, 11)
 		sway = _spring(sway, turn, h, 60, 7)  # the rider: softer, later
+		lean = _spring(lean, l_target, h, 90, 10)
 	chassis.rotation = Vector3(pitch.x, 0, roll.x)
 	var hum := sin(t * 70 + k.ch) * 0.12 * clampf(absf(k.speed) / 300, 0, 1)  # the engine
 	chassis.position = Vector3(0, heave.x * 0.06 + hum, 0)
@@ -228,7 +234,8 @@ func animate(dt: float, k: Kart) -> void:
 	# the rider leans into the bend (against the body's roll), looks where
 	# the kart is going, and is pressed back by a boost
 	var boost := 1.0 if k.boost_t > 0 else 0.0
-	rider.rotation = Vector3(-0.1 * boost + pitch.x * 0.6, -k.steer * 0.16 - k.slide * 0.22, -sway.x * 0.22 - roll.x * 1.2)
+	rider.rotation = Vector3(-0.1 * boost + pitch.x * 0.6, -k.steer * 0.16 - k.slide * 0.22, lean.x - sway.x * 0.1 - roll.x * 1.2)
+	rider.position = HIP + Vector3(-lean.x * 7.0, -absf(lean.x) * 2.0, 0)  # weight shifts to the inside (right is -x)
 	# wheels roll with the road and the front pair steers
 	spin_a += k.speed * dt
 	for i in 4:
