@@ -26,10 +26,10 @@ func _ready() -> void:
 	add_child(root)
 	# name, icon, label, action, radius
 	for b in [
-		["left", "◀", "LEFT", "p0_left", 125.0], ["right", "▶", "RIGHT", "p0_right", 125.0],
-		["gas", "▲", "GAS", "p0_gas", 150.0], ["brake", "▼", "BRAKE", "p0_brake", 100.0],
-		["drift", "⭮", "DRIFT", "p0_drift", 100.0], ["item", "★", "ITEM", "p0_item", 100.0],
-		["pause", "II", "PAUSE", "ui_cancel", 62.0],
+		["left", "left", "LEFT", "p0_left", 125.0], ["right", "right", "RIGHT", "p0_right", 125.0],
+		["gas", "up", "GAS", "p0_gas", 150.0], ["brake", "down", "BRAKE", "p0_brake", 100.0],
+		["drift", "drift", "DRIFT", "p0_drift", 100.0], ["item", "star", "ITEM", "p0_item", 100.0],
+		["pause", "pause", "PAUSE", "ui_cancel", 62.0],
 	]:
 		_make(b[0], b[1], b[2], b[3], b[4])
 	visible = Controls.touch_mode
@@ -47,19 +47,23 @@ func _make(name: String, icon: String, text: String, action: String, r: float) -
 	tb.shape_centered = true
 	tb.action = action
 	tb.passby_press = name in ["left", "right"]  # slide a thumb between the steering buttons
-	# a big icon over a clear word (the word is the label, never the icon alone)
+	# a big icon (drawn, scripts/game_icon.gd: no font can drop it) over a
+	# clear word (the word is the label, never the icon alone)
 	var box := VBoxContainer.new()
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.size = Vector2(r * 2, r * 2)
-	box.add_theme_constant_override("separation", -int(r * 0.08))
+	box.add_theme_constant_override("separation", int(r * 0.04))
 	tb.add_child(box)
-	var labels: Array[Label] = []
-	for part in ([[icon, 0.62], [text, 0.27]] if r > 70 else [[icon, 0.7]]):
+	var labels: Array = []
+	var ic := GameIcon.new(icon, r * (0.5 if r > 70 else 0.7))
+	box.add_child(ic)
+	labels.append(ic)
+	if r > 70:
 		var l := Label.new()
-		l.text = part[0]
+		l.text = text
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		l.add_theme_font_override("font", font)
-		l.add_theme_font_size_override("font_size", int(r * part[1]))
+		l.add_theme_font_size_override("font_size", int(r * 0.27))
 		l.add_theme_color_override("font_color", Color.WHITE)
 		box.add_child(l)
 		labels.append(l)
@@ -70,9 +74,12 @@ func _make(name: String, icon: String, text: String, action: String, r: float) -
 	pads.append({"button": tb, "labels": label, "name": name, "radius": r})
 
 
-func _press(labels: Array[Label], down: bool) -> void:
+func _press(labels: Array, down: bool) -> void:
 	for l in labels:
-		l.add_theme_color_override("font_color", NAVY if down else Color.WHITE)
+		if l is GameIcon:
+			l.color = NAVY if down else Color.WHITE
+		else:
+			l.add_theme_color_override("font_color", NAVY if down else Color.WHITE)
 
 
 ## A round button face: navy with a gold rim; pressed, gold and a touch smaller.

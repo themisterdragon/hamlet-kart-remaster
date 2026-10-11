@@ -143,8 +143,9 @@ class StatBars extends Control:
 				draw_rect(r, UiKit.GOLD_SOFT, false, 2.0)
 			if marks[i] != "":
 				var up: bool = marks[i] == "+"
-				draw_string(font, Vector2(412, y + 11), "▲" if up else "▼", HORIZONTAL_ALIGNMENT_LEFT, -1, 24,
-					Color("7be08f") if up else Color("ff8a8a"))
+				var col := Color("7be08f") if up else Color("ff8a8a")
+				var tip := 9.0 if up else -9.0  # a drawn ▲ or ▼ (no font needed)
+				draw_colored_polygon(PackedVector2Array([Vector2(424, y - tip), Vector2(434, y + tip), Vector2(414, y + tip)]), col)
 
 
 ## The title art's dressing: a vignette and gold dust drifting up.

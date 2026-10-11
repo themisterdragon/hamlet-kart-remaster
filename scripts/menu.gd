@@ -548,12 +548,25 @@ func _tracks() -> void:
 	info.add_child(UiKit.Rule.new(380))
 	var head := _label_in(info, chunky, 30, UiKit.GOLD_PALE)
 	head.text = "Landmarks on the way"
-	var marks := _label_in(info, body, 32, Color.WHITE)
+	var marks := VBoxContainer.new()  # each landmark after a drawn gold diamond
+	marks.add_theme_constant_override("separation", 6)
+	info.add_child(marks)
+	var mark_labels: Array[Label] = []
+	for j in 3:
+		var line := HBoxContainer.new()
+		line.alignment = BoxContainer.ALIGNMENT_CENTER
+		line.add_theme_constant_override("separation", 14)
+		line.add_child(GameIcon.new("diamond", 20))
+		marks.add_child(line)
+		mark_labels.append(_label_in(line, body, 32, Color.WHITE))
 	var show := func(i: int) -> void:
 		var t: Dictionary = Content.tracks[i]
 		act.text = "%s · %s" % [Content.acts[int(t.act)].name, t.scenes]
 		name.text = t.name
-		marks.text = "\n".join(Track.landmarks(i).map(func(l): return "◆  " + l.name))
+		var lms := Track.landmarks(i)
+		for j in 3:
+			mark_labels[j].text = lms[j].name if j < lms.size() else ""
+			mark_labels[j].get_parent().visible = j < lms.size()
 	for i in Content.tracks.size():
 		var t: Dictionary = Content.tracks[i]
 		var b := _button("%s\n%s" % [Content.acts[int(t.act)].name, t.name], func(): _track_picked(i), grid)
@@ -731,8 +744,15 @@ func _join_page() -> void:
 		k.custom_minimum_size = Vector2(84, 64)
 		if first == null:
 			first = k
-	var del := _button("⌫", func(): code_edit.text = code_edit.text.left(-1), keys)
+	var del := _button("", func(): code_edit.text = code_edit.text.left(-1), keys)
 	del.custom_minimum_size = Vector2(84, 64)
+	del.tooltip_text = "Delete"
+	var del_icon := GameIcon.new("delete", 40)
+	del_icon.set_anchors_preset(Control.PRESET_CENTER)
+	del_icon.position = Vector2(-20, -20)
+	del.add_child(del_icon)
+	del.focus_entered.connect(func(): del_icon.color = UiKit.INK)
+	del.focus_exited.connect(func(): del_icon.color = Color.WHITE)
 	_button("Next: choose your racer", _join_go)
 	_button("Back", _title)
 	status_label = _text("Type the code, or pick the letters with %s." % Controls.glyph("accept"), body, 26, Color(1, 1, 1, 0.7))

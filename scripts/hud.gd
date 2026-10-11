@@ -422,7 +422,7 @@ func show_results(karts: Array, me: Kart) -> void:
 	for k in order:
 		var who: String = Content.characters[k.ch].name
 		var t := "%d:%05.2f" % [int(k.finish_time) / 60, fmod(k.finish_time, 60)] if k.finished else "—"
-		lines.append(("%s   %s   %s" % [ORDINAL[k.place - 1], who, t]) + ("   ◀ you" if k == me else ""))
+		lines.append(("%s   %s   %s" % [ORDINAL[k.place - 1], who, t]) + ("   (you)" if k == me else ""))
 	lines.append("")
 	lines.append("Questions right: %d of %d" % [me.right, me.right + me.wrong])
 	lines.append("")
