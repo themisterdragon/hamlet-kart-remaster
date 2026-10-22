@@ -285,9 +285,11 @@ func _environment() -> void:
 		_low_quality()
 
 
-## For slow computers (school Chromebooks): no shadows, glow or smoothing.
+## For slow computers (school Chromebooks): no shadows, glow, smoothing or
+## bumpy surfaces.
 func _low_quality() -> void:
 	Game.low_quality = true
+	track.flatten()
 	sun.shadow_enabled = false
 	env.glow_enabled = false
 	get_viewport().msaa_3d = Viewport.MSAA_DISABLED

@@ -20,7 +20,7 @@ SRC = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "
 FONTS = ["Almendra-Bold.ttf", "Almendra-OFL.txt", "LilitaOne-Regular.ttf", "LilitaOne-OFL.txt",
          "Andika-Bold.ttf", "Andika-OFL.txt"]
 IMAGES = ["portraits.png", "logo.png", "emblem.png", "title_bg.png"]
-DIRS = ["karts", "items", "tex"]  # kart sprite sheets (32 angles), item icons, road textures
+DIRS = ["karts", "items"]  # kart sprite sheets (32 angles), item icons (road textures: tools/make_surfaces.py)
 
 
 def load_content():

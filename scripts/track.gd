@@ -9,7 +9,12 @@ const WALL_H := 26.0
 const WALL_T := 10.0  # barrier thickness
 # the road's material: 0 cobbles, 1 flagstones, 2 planks, 3 carpet, 4 earth, 5 sand
 const ROAD_MATERIAL := [0, 3, 4, 0, 0, 0, 4, 2, 1, 3, 1, 4, 4, 5, 4, 1]
-const TEX_MEAN := 214.0 / 255.0  # the road textures' average brightness
+const SURFACES := ["cobbles", "flagstones", "planks", "carpet", "earth", "sand"]
+const ROUGHNESS := [0.82, 0.75, 0.7, 1.0, 0.95, 0.95]
+# the ground around each track (assets/images/surface, from tools/make_surfaces.py)
+const GROUND := ["snow", "grass", "grass", "grass", "grass", "carpet", "grass", "carpet",
+	"flagstones", "carpet", "flagstones", "earth", "grass", "water", "grass", "flagstones"]
+const TEX_MEAN := 214.0 / 255.0  # the surface textures' average brightness
 
 static var _data: Dictionary
 
@@ -344,15 +349,22 @@ func _build() -> void:
 		_build_pad(deco, p.seg, p.lat)
 	if ramp >= 0:
 		_build_ramp(deco, ramp)
-	var road_mat := StandardMaterial3D.new()
+	var road_mat := _surface_material(SURFACES[ROAD_MATERIAL[index]])
 	road_mat.vertex_color_use_as_albedo = true
-	road_mat.albedo_texture = load("res://assets/images/tex/%02d.png" % ROAD_MATERIAL[index])
-	road_mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	road_mat.roughness = ROUGHNESS[ROAD_MATERIAL[index]]
 	road_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	road.generate_normals()
+	road.generate_tangents()
 	_add_mesh(road.commit(), road_mat)
-	var deco_mat := StandardMaterial3D.new()
+	# curbs, shoulders and barriers: a soft painted grain, projected from the
+	# world so it needs no UVs and never stretches
+	var deco_mat := _surface_material("plaster")
 	deco_mat.vertex_color_use_as_albedo = true
+	deco_mat.uv1_triplanar = true
+	deco_mat.uv1_world_triplanar = true
+	deco_mat.uv1_scale = Vector3.ONE / 96.0
+	deco_mat.normal_scale = 0.6
+	deco_mat.roughness = 0.7
 	deco_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	deco.generate_normals()
 	_add_mesh(deco.commit(), deco_mat)
@@ -404,14 +416,74 @@ func _add_mesh(mesh: Mesh, mat: Material) -> void:
 	add_child(mi)
 
 
+static func _surface_material(surface: String) -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_texture = load("res://assets/images/surface/%s.png" % surface)
+	mat.normal_enabled = true
+	mat.normal_texture = load("res://assets/images/surface/%s_n.png" % surface)
+	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	return mat
+
+
+## The ground: its texture laid twice at different sizes and angles, blended
+## by a slow wash of light and dark, so the tiles never show as a grid. Water
+## drifts and shines.
+const GROUND_SHADER := """
+shader_type spatial;
+uniform vec4 tint : source_color;
+uniform sampler2D tex : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D nrm : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform float tile = 256.0;  // world units per tile
+uniform float flow = 0.0;
+uniform float rough = 0.95;
+uniform bool bump = true;
+varying vec2 wp;
+void vertex() {
+	wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xz;
+}
+void fragment() {
+	vec2 p = wp / tile + vec2(TIME * flow, TIME * flow * 0.6);
+	vec2 q = mat2(vec2(0.8, -0.6), vec2(0.6, 0.8)) * (wp / (tile * 1.37)) - vec2(TIME * flow * 0.7, 0.0);
+	float wash = texture(tex, wp / (tile * 11.0)).r;
+	float w = smoothstep(0.75, 0.95, texture(tex, wp / (tile * 7.0) + 0.5).r);
+	vec3 a = mix(texture(tex, p).rgb, texture(tex, q).rgb, w);
+	ALBEDO = tint.rgb * a * mix(0.88, 1.08, wash);
+	if (bump) {
+		NORMAL_MAP = mix(texture(nrm, p).rgb, texture(nrm, q).rgb, w);
+	}
+	ROUGHNESS = rough;
+}
+"""
+
+
+## Low quality: flat surfaces (no normal maps), for computers that can't keep up.
+func flatten() -> void:
+	for c in get_children():
+		if c is MeshInstance3D:
+			var m: Material = c.material_override
+			if m is StandardMaterial3D:
+				m.normal_enabled = false
+				m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+				if m.uv1_triplanar:
+					m.albedo_texture = null
+			elif m is ShaderMaterial:
+				m.set_shader_parameter("bump", false)
+
+
 func _ground() -> void:
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(20000, 20000)
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = _col("ground")
-	mat.albedo_texture = load("res://assets/images/tex/04.png")  # earth, shared by every track's ground
-	mat.uv1_scale = Vector3(120, 120, 1)
-	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	var kind: String = GROUND[index]
+	var mat := ShaderMaterial.new()
+	mat.shader = Shader.new()
+	mat.shader.code = GROUND_SHADER
+	mat.set_shader_parameter("tint", _col("ground"))
+	mat.set_shader_parameter("tex", load("res://assets/images/surface/%s.png" % kind))
+	mat.set_shader_parameter("nrm", load("res://assets/images/surface/%s_n.png" % kind))
+	mat.set_shader_parameter("tile", 160.0 if kind in ["grass", "snow", "earth"] else 256.0)
+	if kind == "water":
+		mat.set_shader_parameter("flow", 0.012)
+		mat.set_shader_parameter("rough", 0.25)
 	var mi := MeshInstance3D.new()
 	mi.mesh = plane
 	mi.material_override = mat

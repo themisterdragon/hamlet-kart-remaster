@@ -98,6 +98,10 @@ in the N64 edition and re-import, so both editions stay the same.
 garage's parts from `tools/kart_parts.py` (riders, kart bodies, wheels and
 hood ornaments, each with a light copy for far away) and `data/karts.json`.
 
+`tools/make_surfaces.py` paints the road, ground and barrier textures in
+`assets/images/surface/` (needs numpy and Pillow): seeded noise, so they're
+the game's own art and come out the same every run, each with a normal map.
+
 ## Privacy check
 
 `.githooks/pre-commit` runs `tools/check_privacy.py` on every commit. It
