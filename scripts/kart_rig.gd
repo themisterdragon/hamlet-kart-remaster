@@ -114,7 +114,7 @@ func _build(ch: int, b: Dictionary) -> void:
 	var seat := Node3D.new()
 	seat.position = -HIP
 	rider.add_child(seat)
-	_part(seat, "rider_c%02d" % ch, Cast.clay(), true)
+	_part(seat, "rider_c%02d" % ch, Cast.face(ch), true)
 	var axles: Dictionary = KartBuild.data().bodies[b.body]
 	for a in [axles.front, axles.front, axles.back, axles.back]:
 		var side := 1.0 if wheels.size() % 2 == 0 else -1.0

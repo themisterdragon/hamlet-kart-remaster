@@ -47,22 +47,26 @@ def mesh(scene, cell=None):
     return nv, nt, verts, tris
 
 
-def write_glb(path, nv, nt, verts, tris):
-    pos, nrm, col = bytearray(), bytearray(), bytearray()
+def write_glb(path, nv, nt, verts, tris, uvm=None):
+    """uvm: per vertex (u, v, paint mask) for a painted face (tools/faces.py):
+    the mask goes in the colour's alpha, the place in TEXCOORD_0."""
+    pos, nrm, col, uv = bytearray(), bytearray(), bytearray(), bytearray()
     lo, hi = [1e9] * 3, [-1e9] * 3
     for i in range(nv):
         v = verts[10 * i: 10 * i + 10]
         pos += struct.pack("<3f", *v[0:3])
         nrm += struct.pack("<3f", *v[3:6])
         # the sculpt's sRGB palette as is: Godot's clay material reads it as sRGB (scripts/cast.gd)
-        col += struct.pack("<4f", *v[6:9], 1.0)
+        col += struct.pack("<4f", *v[6:9], uvm[i][2] if uvm else 1.0)
+        if uvm:
+            uv += struct.pack("<2f", uvm[i][0], uvm[i][1])
         lo = [min(a, b) for a, b in zip(lo, v[0:3])]
         hi = [max(a, b) for a, b in zip(hi, v[0:3])]
     # sdfmesh winds clockwise; glTF's front faces are counter-clockwise (else
     # the renderer culls the near side and the model looks see-through)
     ccw = [tris[3 * t + k] for t in range(nt) for k in (0, 2, 1)]
     idx = struct.pack("<%dI" % (3 * nt), *ccw)
-    blobs = [pos, nrm, col, idx]
+    blobs = [pos, nrm, col, idx] + ([uv] if uvm else [])
     offsets, buf = [], bytearray()
     for b in blobs:
         offsets.append(len(buf))
@@ -88,6 +92,10 @@ def write_glb(path, nv, nt, verts, tris):
             {"bufferView": 3, "componentType": 5125, "count": 3 * nt, "type": "SCALAR"},
         ],
     }
+    if uvm:
+        gltf["meshes"][0]["primitives"][0]["attributes"]["TEXCOORD_0"] = 4
+        gltf["bufferViews"].append({"buffer": 0, "byteOffset": offsets[4], "byteLength": len(uv), "target": 34962})
+        gltf["accessors"].append({"bufferView": 4, "componentType": 5126, "count": nv, "type": "VEC2"})
     js = json.dumps(gltf, separators=(",", ":")).encode()
     js += b" " * (-len(js) % 4)
     with open(path, "wb") as f:
@@ -123,20 +131,29 @@ def parts(chars):
         jobs["body_" + name] = (scene_of(b[0]), 0.7, 12000, 1800)
     for name, fn in kp.WHEELS.items():
         jobs["wheel_" + name] = (scene_of(fn), 0.35, 1800, 260)
-    riders, ornaments, colours = kp.riders_and_ornaments(chars)
+    import faces as fc
+    riders, ornaments, colours, faces = kp.riders_and_ornaments(chars)
+    face_of = {}
+    fdir = os.path.join(ROOT, "assets", "images", "faces")
+    os.makedirs(fdir, exist_ok=True)
     for i, s in riders.items():
         jobs["rider_c%02d" % i] = (s, 0.7, 15000, 2600)
+        face_of["rider_c%02d" % i] = faces[i]
+        if faces[i]:
+            fc.paint(faces[i]).save(os.path.join(fdir, "c%02d.png" % i), optimize=True)
     for i, s in ornaments.items():
         jobs["orn_c%02d" % i] = (s, 0.3, 1500, 0)
     for name, (scene, cell, near, far) in jobs.items():
         if ONLY_PROPS and not any(name.startswith(o) for o in ONLY_PROPS):
             continue
         c, m = budgeted(scene, cell, near)
-        write_glb(os.path.join(out, name + ".glb"), *m)
+        face = face_of.get(name, False)
+        uvm = (lambda mm: fc.uv_mask(face, mm[2], mm[0])) if face is not False else (lambda mm: None)
+        write_glb(os.path.join(out, name + ".glb"), *m, uvm(m))
         line = f"{name}: {m[1]} triangles (cell {c:.2f})"
         if far:
             c2, m2 = budgeted(scene, c * 2.2, far)
-            write_glb(os.path.join(out, name + "_lo.glb"), *m2)
+            write_glb(os.path.join(out, name + "_lo.glb"), *m2, uvm(m2))
             line += f", far {m2[1]}"
         print(line)
     hexc = lambda c: "%02x%02x%02x" % tuple(c)

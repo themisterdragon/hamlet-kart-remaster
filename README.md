@@ -97,6 +97,9 @@ in the N64 edition and re-import, so both editions stay the same.
 `tools/sdfmesh` (C, needs gcc with OpenMP). `make_models.py parts` makes the
 garage's parts from `tools/kart_parts.py` (riders, kart bodies, wheels and
 hood ornaments, each with a light copy for far away) and `data/karts.json`.
+The riders' eyes, brows and mouths are painted, not sculpted
+(`tools/faces.py`, into `assets/images/faces/`), from the same settings the
+sculpts use, so they stay sharp at any size.
 
 `tools/make_surfaces.py` paints the road, ground and barrier textures in
 `assets/images/surface/` (needs numpy and Pillow): seeded noise, so they're

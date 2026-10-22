@@ -258,8 +258,10 @@ WHEELS = {"tread": tread, "spoked": spoked, "royal": royal}
 
 def riders_and_ornaments(c):
     """Each character's rider (their sculpt with kart() skipped) and their
-    hood ornament on its own, plus their own kart's colours."""
-    riders, ornaments, colours = {}, {}, {}
+    hood ornament on its own, plus their own kart's colours and their face
+    (tools/faces.py: painted, not sculpted)."""
+    import faces as fc
+    riders, ornaments, colours, faces = {}, {}, {}, {}
     real = c.kart
     for i, build in enumerate(c.CAST):
         got = {}
@@ -267,8 +269,7 @@ def riders_and_ornaments(c):
         def no_kart(s, body, trim, seat, ornament=None, fins=False):
             got.update(body=body, trim=trim, seat=seat, ornament=ornament, fins=fins)
         c.kart = no_kart
-        s = c.Scene()
-        build(s)
+        s, faces[i] = fc.capture(c, build)
         c.kart = real
         riders[i] = s
         if got.get("ornament"):
@@ -277,4 +278,4 @@ def riders_and_ornaments(c):
             got["ornament"](o)
             ornaments[i] = o
         colours[i] = got
-    return riders, ornaments, colours
+    return riders, ornaments, colours, faces
