@@ -30,6 +30,8 @@ window.hk = (() => {
   async function make(id) {
     const my = ++gen;
     const config = { iceServers: await ice() };
+    // ?relay in the page address: always go through the relay (to test it)
+    if (/[?&]relay\b/.test(location.search)) config.iceTransportPolicy = "relay";
     if (my !== gen) return null;  // closed (or started again) while fetching
     peer = id ? new Peer(PREFIX + id, { config }) : new Peer({ config });
     peer.on("error", (e) => push({ t: "error", msg: e.type || String(e) }));
