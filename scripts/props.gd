@@ -49,6 +49,7 @@ static func _box(x: float, y: float, z: float) -> BoxMesh:
 
 
 static var _scenes := {}
+const STONE := ["CASTLE", "TOWER", "CHAPEL"]  # built of dressed stone blocks
 
 
 static func make(name: String, _theme: Dictionary) -> Node3D:
@@ -57,8 +58,9 @@ static func make(name: String, _theme: Dictionary) -> Node3D:
 		if not _scenes.has(path):
 			_scenes[path] = load(path)
 		var m: Node3D = _scenes[path].instantiate()
+		var mat := Cast.stone() if name in STONE else Cast.clay()
 		for mi in m.find_children("*", "MeshInstance3D", true, false):
-			mi.material_override = Cast.clay()
+			mi.material_override = mat
 		return m
 	var root := Node3D.new()
 	root.name = name.capitalize()

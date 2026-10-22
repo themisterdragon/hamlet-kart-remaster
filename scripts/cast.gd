@@ -18,6 +18,24 @@ static func clay() -> StandardMaterial3D:
 	return _mat
 
 
+static var _stone: StandardMaterial3D
+
+
+## Clay with dressed stone blocks pressed into it (the castle and towers),
+## projected from the model's own sides so nothing needs UVs.
+static func stone() -> StandardMaterial3D:
+	if _stone == null:
+		_stone = clay().duplicate()
+		_stone.albedo_texture = load("res://assets/images/surface/ashlar.png")
+		_stone.normal_enabled = true
+		_stone.normal_texture = load("res://assets/images/surface/ashlar_n.png")
+		_stone.uv1_triplanar = true
+		_stone.uv1_scale = Vector3.ONE / 96.0
+		_stone.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+		_stone.roughness = 0.85
+	return _stone
+
+
 ## A rider's clay with their painted face (tools/faces.py) laid over it: the
 ## face texture sits in UV, and the colour's alpha marks the bare skin it may
 ## paint (hair, beards and spectacles in front stay on top). Riders without a

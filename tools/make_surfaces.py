@@ -332,6 +332,29 @@ def plaster():
     save("plaster", albedo, 0.6 * g + 0.4 * brush, 2, mean=0.95)
 
 
+def ashlar_stone():
+    """Castle walls: dressed stone blocks in running bond, close to white so
+    the sculpt's own stone colour shows through."""
+    rng = np.random.default_rng(24)
+    dist, ids, n = ashlar(rng, 8, 70, 140, 2.0)
+    grain = fbm(rng, 16, 4)
+    tone = rng.uniform(0.9, 1.04, n)[ids]
+    face = tone * (0.93 + 0.07 * grain)
+    joint = smooth(np.clip((dist - 1.0) / 2.5, 0, 1))
+    albedo = 0.62 + (face - 0.62) * joint
+    height = smooth(np.clip(dist / 6.0, 0, 1)) + 0.1 * grain
+    save("ashlar", albedo, height, 6, mean=0.92)
+
+
+def clouds():
+    """Soft cloud cover for the sky (no normal map): white where there's cloud."""
+    rng = np.random.default_rng(25)
+    c = 0.6 * fbm(rng, 8, 5, 0.55) + 0.4 * fbm(rng, 4, 3)
+    c = smooth(np.clip((c - 0.47) / 0.22, 0, 1))
+    Image.fromarray((c * 255).round().astype(np.uint8), "L").save(os.path.join(OUT, "clouds.png"), optimize=True)
+    print(f"clouds: cover {c.mean():.2f}")
+
+
 if __name__ == "__main__":
     cobbles()
     flagstones()
@@ -343,3 +366,5 @@ if __name__ == "__main__":
     snow()
     water()
     plaster()
+    ashlar_stone()
+    clouds()

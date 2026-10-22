@@ -241,18 +241,71 @@ func _intro_frame(delta: float) -> void:
 	hud.show_state(player, countdown, race_time, karts.size())
 
 
+const SKY_SHADER := """
+shader_type sky;
+uniform vec4 top : source_color;
+uniform vec4 horizon : source_color;
+uniform vec4 ground : source_color;
+uniform vec4 cloud_col : source_color;
+uniform sampler2D clouds : filter_linear_mipmap, repeat_enable;
+uniform float cloud_amt = 0.8;
+uniform float night = 0.0;
+float hash(vec2 p) {
+	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+void sky() {
+	vec3 d = EYEDIR;
+	float h = d.y;
+	vec3 col;
+	if (h >= 0.0) {
+		col = mix(horizon.rgb, top.rgb, pow(smoothstep(0.0, 0.65, h), 0.8));
+		// stars: a sparse grid of twinkles, fading out toward the haze
+		vec2 g = d.xz / (h + 0.3) * 90.0;
+		vec2 cell = floor(g);
+		float st = step(0.985, hash(cell));
+		float tw = 0.6 + 0.4 * sin(TIME * (1.0 + 3.0 * hash(cell + 7.0)) + 6.0 * hash(cell + 3.0));
+		float dot_ = smoothstep(0.32, 0.0, length(fract(g) - 0.5));
+		col += vec3(st * dot_ * tw * night * smoothstep(0.08, 0.4, h));
+		// the moon
+		vec3 moon = normalize(vec3(0.55, 0.32, -0.77));
+		float md = dot(d, moon);
+		col = mix(col, vec3(0.95, 0.94, 0.86), night * smoothstep(0.9993, 0.9995, md));
+		col += night * vec3(0.10, 0.11, 0.14) * pow(max(md, 0.0), 300.0);
+		// clouds on a dome: two layers drifting at different speeds
+		vec2 uv = d.xz / (h + 0.12);
+		float c = texture(clouds, uv * 0.16 + vec2(TIME * 0.003, 0.0)).r * 0.7
+			+ texture(clouds, uv * 0.37 + vec2(0.31, TIME * 0.005)).r * 0.5;
+		c = smoothstep(0.15, 0.75, c) * cloud_amt * smoothstep(0.0, 0.1, h);
+		col = mix(col, cloud_col.rgb, c);
+	} else {
+		col = mix(horizon.rgb, ground.rgb, smoothstep(0.0, -0.25, h));
+	}
+	COLOR = col;
+}
+"""
+
+
 func _environment() -> void:
 	var th := track.theme
 	env = Environment.new()
-	# a soft sky in the scene's colours: deep overhead, fog at the horizon
-	var sky_mat := ProceduralSkyMaterial.new()
-	sky_mat.sky_top_color = Color(th.sky).darkened(0.25)
-	sky_mat.sky_horizon_color = Color(th.fog)
-	sky_mat.ground_horizon_color = Color(th.fog)
-	sky_mat.ground_bottom_color = Color(th.ground)
-	sky_mat.sun_angle_max = 20
+	# a painted sky in the scene's colours: deep overhead, fog at the
+	# horizon, soft clouds drifting by; stars and a moon on the night scenes
+	var sky_mat := ShaderMaterial.new()
+	sky_mat.shader = Shader.new()
+	sky_mat.shader.code = SKY_SHADER
+	var top := Color(th.sky).darkened(0.25)
+	var night := top.get_luminance() < 0.15
+	sky_mat.set_shader_parameter("top", top)
+	sky_mat.set_shader_parameter("horizon", Color(th.fog))
+	sky_mat.set_shader_parameter("ground", Color(th.ground))
+	sky_mat.set_shader_parameter("clouds", load("res://assets/images/surface/clouds.png"))
+	sky_mat.set_shader_parameter("cloud_col", Color(th.fog).lerp(Color.WHITE, 0.15 if night else 0.6))
+	sky_mat.set_shader_parameter("cloud_amt", 0.45 if night else 0.85)
+	sky_mat.set_shader_parameter("night", 1.0 if night else 0.0)
 	var sky := Sky.new()
 	sky.sky_material = sky_mat
+	sky.process_mode = Sky.PROCESS_MODE_REALTIME  # (the clouds drift; the sheen it lends the clay needs little detail)
+	sky.radiance_size = Sky.RADIANCE_SIZE_32
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.glow_enabled = true  # flames and sparks glow a little
@@ -290,6 +343,7 @@ func _environment() -> void:
 func _low_quality() -> void:
 	Game.low_quality = true
 	track.flatten()
+	env.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED  # the drifting sky isn't re-lit each frame
 	sun.shadow_enabled = false
 	env.glow_enabled = false
 	get_viewport().msaa_3d = Viewport.MSAA_DISABLED

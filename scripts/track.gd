@@ -7,6 +7,8 @@ extends Node3D
 const CURB_W := 14.0
 const WALL_H := 26.0
 const WALL_T := 10.0  # barrier thickness
+const BEVEL := 3.5  # the barrier's top inner edge, chamfered
+const AO_W := 9.0  # the shadow on the ground at a barrier's foot
 # the road's material: 0 cobbles, 1 flagstones, 2 planks, 3 carpet, 4 earth, 5 sand
 const ROAD_MATERIAL := [0, 3, 4, 0, 0, 0, 4, 2, 1, 3, 1, 4, 4, 5, 4, 1]
 const SURFACES := ["cobbles", "flagstones", "planks", "carpet", "earth", "sand"]
@@ -281,6 +283,14 @@ func _edge(k: int, lat: float, dy: float) -> Vector3:
 	return Vector3(p.x + r.x * lat, p.y + dy, p.z + r.y * lat)
 
 
+## A quad shaded from one edge to the other: a, b in col_ab; c, d in col_cd.
+func _quad_fade(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, d: Vector3, col_ab: Color, col_cd: Color) -> void:
+	for v in [[a, col_ab], [b, col_ab], [c, col_cd], [a, col_ab], [c, col_cd], [d, col_cd]]:
+		st.set_color(v[1])
+		st.set_uv(Vector2.ZERO)
+		st.add_vertex(v[0])
+
+
 func _quad(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, d: Vector3, col: Color, uv := [Vector2.ZERO, Vector2.ZERO, Vector2.ZERO, Vector2.ZERO]) -> void:
 	# a, b along one side, c, d back along the other: two triangles, facing up/in
 	st.set_color(col)
@@ -340,9 +350,13 @@ func _build() -> void:
 				var in1: float = e1 - side * CURB_W
 				var out0: float = e0 + side * shoulder
 				var out1: float = e1 + side * shoulder
-				# curb on the road's edge, shoulder out to the barrier
+				# curb on the road's edge, shoulder out to the barrier, darkening
+				# into the barrier's shadow at its foot
 				_quad(deco, _edge(i, in0, 0.6 + lift), _edge(j, in1, 0.6 + lift), _edge(j, e1, 0.6 + lift), _edge(i, e0, 0.6 + lift), stripe)
-				_quad(deco, _edge(i, e0, 0.2 + lift), _edge(j, e1, 0.2 + lift), _edge(j, out1, 0.2 + lift), _edge(i, out0, 0.2 + lift), shoulder_col)
+				var mid0: float = out0 - side * AO_W
+				var mid1: float = out1 - side * AO_W
+				_quad(deco, _edge(i, e0, 0.2 + lift), _edge(j, e1, 0.2 + lift), _edge(j, mid1, 0.2 + lift), _edge(i, mid0, 0.2 + lift), shoulder_col)
+				_quad_fade(deco, _edge(j, mid1, 0.2 + lift), _edge(i, mid0, 0.2 + lift), _edge(i, out0, 0.2 + lift), _edge(j, out1, 0.2 + lift), shoulder_col, shoulder_col.darkened(0.4))
 		_walls(deco, i, j, pairs, curb, curb_dark, skirt)
 		v += dv
 	for p in pads:
@@ -401,9 +415,13 @@ func _walls(st: SurfaceTool, i: int, j: int, pairs: Array, curb: Color, dark: Co
 		var t0 := l0 + s * WALL_T
 		var t1 := l1 + s * WALL_T
 		var down := ground_y - 4
-		# inner face, padded top, outer skirt down to the ground
-		_quad(st, _edge(i, l0, 0), _edge(j, l1, 0), _edge(j, l1, WALL_H), _edge(i, l0, WALL_H), stripe)
-		_quad(st, _edge(i, l0, WALL_H), _edge(j, l1, WALL_H), _edge(j, t1, WALL_H), _edge(i, t0, WALL_H), stripe.lightened(0.15))
+		# inner face (darker at its foot), a bevelled edge that catches the
+		# light, padded top, outer skirt down to the ground
+		var b0 := l0 + s * BEVEL
+		var b1 := l1 + s * BEVEL
+		_quad_fade(st, _edge(i, l0, 0), _edge(j, l1, 0), _edge(j, l1, WALL_H - BEVEL), _edge(i, l0, WALL_H - BEVEL), stripe.darkened(0.3), stripe)
+		_quad(st, _edge(i, l0, WALL_H - BEVEL), _edge(j, l1, WALL_H - BEVEL), _edge(j, b1, WALL_H), _edge(i, b0, WALL_H), stripe.lightened(0.1))
+		_quad(st, _edge(i, b0, WALL_H), _edge(j, b1, WALL_H), _edge(j, t1, WALL_H), _edge(i, t0, WALL_H), stripe.lightened(0.15))
 		var a := _edge(i, t0, WALL_H)
 		var b := _edge(j, t1, WALL_H)
 		_quad(st, a, b, Vector3(b.x, down, b.z), Vector3(a.x, down, a.z), skirt)
