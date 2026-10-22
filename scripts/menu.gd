@@ -154,7 +154,9 @@ func _title() -> void:
 		v.name = "Build"
 		if not has_node("Build"):
 			add_child(v)
-	_button("Solo Race", func(): _characters(_tracks))
+	_button("Solo Race", func():
+		Game.mode = Game.Mode.SOLO  # (not still a player from a join page left with Back)
+		_characters(_tracks))
 	if Net.available():
 		_button("Host a Class Race", func():
 			Game.mode = Game.Mode.HOST
@@ -789,9 +791,21 @@ func _waiting() -> void:
 
 func _net_failed(why: String) -> void:
 	if Game.mode == Game.Mode.CLIENT and not hello_sent:
-		_lost("Couldn't find that race (%s). Check the code with your teacher." % why)
+		_lost(_why_not(why))
 	elif status_label and is_instance_valid(status_label):
 		status_label.text = "Network problem: %s" % why
+
+
+## What a player is told when joining fails, by PeerJS's error type.
+func _why_not(why: String) -> String:
+	match why:
+		"peer-unavailable":
+			return "No race has the code %s right now.\nCheck the code with your teacher, and that their race page is still open." % Game.code
+		"no-link", "negotiation-failed", "connection-closed":
+			return "Found race %s, but this network wouldn't let the two devices connect.\nTry again; if it keeps happening, tell your teacher (the school network may need the relay setting)." % Game.code
+		"network", "server-error", "socket-error", "disconnected":
+			return "Couldn't reach the class race service (%s).\nCheck the internet connection and try again." % why
+	return "Couldn't join race %s (%s). Check the code with your teacher." % [Game.code, why]
 
 
 func _lost(why: String) -> void:

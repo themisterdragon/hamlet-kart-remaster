@@ -32,9 +32,11 @@ A class race connects the players' browsers to each other. To do that:
 - **Finding each other:** while connecting, browsers ask **Google's STUN
   server** (stun.l.google.com) for their public address, the standard way
   web video calls connect. Google sees the IP address in that request.
-- **If a network blocks a direct link** (some school networks do), the race
-  can run through a **PeerJS relay server** (in the EU or US). The relay
-  passes along encrypted game traffic it can't read.
+- **If a network blocks a direct link** (most school networks do), the race
+  runs through a **relay server** from Metered's free Open Relay service
+  (metered.ca). The game first asks Metered for a relay login. The relay
+  passes along encrypted game traffic it can't read, and sees the players'
+  IP addresses.
 - **What travels between players:** each player's chosen character, their
   controller presses, and the race as the host's screen sees it (kart
   positions, items, the question on screen). No names or personal details.
@@ -51,7 +53,8 @@ game's author, can see who played or what they answered.
 - Use the **downloads** for solo play: no connections at all.
 - A school can host the browser version on its own web server (it's a
   folder of static files, `build/web`), so GitHub isn't involved.
-- The matchmaking and relay servers can be replaced by a school's own
-  (PeerJS's server is open source); ask and we'll make that a setting.
+- The relay can be replaced by a school's own TURN server (for example
+  coturn): list it in `web/ice.js`. The matchmaking server can be replaced
+  too (PeerJS's server is open source).
 
 Questions: open an issue on the GitHub repository.
