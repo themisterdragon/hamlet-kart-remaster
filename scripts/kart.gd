@@ -567,7 +567,7 @@ func apply(a: Array) -> void:
 
 
 ## (player) Between the host's updates, carry on at the last speed and glide
-## toward it, so 20 updates a second look like smooth driving.
+## toward it, so 15 updates a second look like smooth driving.
 func smooth(dt: float) -> void:
 	if net_pos == Vector3.INF:
 		return

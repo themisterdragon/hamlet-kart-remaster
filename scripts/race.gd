@@ -56,6 +56,18 @@ var remote_in := {}     # (host) peer -> that player's latest controls
 var send_t := 0.0
 var snap: Dictionary    # (player) the latest race state from the host
 var snap_new := false
+# Online updates carry only what changed (the channel is reliable and in
+# order), with a full one every second, so a school's free relay allowance
+# lasts. Player controls go out only when they change.
+const SNAP_RATE := 15.0  # race updates a second (players glide between them)
+const KEYFRAME := 15     # every 15th update is complete
+var snap_n := 0
+var sent_ks: Array = []  # (host) each kart's state as last sent
+var sent_q := ""         # (host) the questions as last sent
+var net_ks: Array = []   # (player) each kart's state, patched by each update
+var net_q: Dictionary = {}
+var sent_pad := ""       # (player) my controls as last sent
+var pad_quiet := 0.0
 var latched := {}       # (player) button presses not sent yet
 
 # items in flight and on the road, and the moving scenery
@@ -494,7 +506,7 @@ func _step(dt: float) -> void:
 	if online:
 		send_t -= dt
 		if send_t <= 0:
-			send_t = 0.05  # 20 times a second
+			send_t = 1.0 / SNAP_RATE
 			Net.broadcast(_snapshot())
 
 
@@ -881,7 +893,8 @@ func _net_left(peer: String) -> void:
 		get_tree().change_scene_to_file("res://scenes/menu.tscn")
 
 
-## (host) Everything a player's screen needs, about 1-2 KB.
+## (host) What a player's screen needs: everything once a second (about
+## 1 KB), otherwise only what changed.
 func _snapshot() -> Dictionary:
 	var ks := []
 	var qs := {}
@@ -900,7 +913,26 @@ func _snapshot() -> Dictionary:
 	var ds := []
 	for d in drops:
 		ds.append([snappedf(d.pos.x, 0.1), snappedf(d.pos.y, 0.1), snappedf(d.pos.z, 0.1)])
-	return {"k": "s", "cd": countdown, "t": race_time, "ks": ks, "q": qs, "bx": bx, "ps": ps, "ds": ds, "lo": obstacles.snapshot()}
+	var out := {"k": "s", "cd": countdown, "t": snappedf(race_time, 0.01), "bx": bx, "ps": ps, "ds": ds, "lo": obstacles.snapshot()}
+	var full := snap_n % KEYFRAME == 0 or sent_ks.size() != ks.size()
+	snap_n += 1
+	if full:
+		out.ks = ks
+	else:  # per kart: [field, value, field, value...] for the fields that changed
+		var kd := []
+		for i in ks.size():
+			var ch := []
+			for f in ks[i].size():
+				if ks[i][f] != sent_ks[i][f]:
+					ch.append_array([f, ks[i][f]])
+			kd.append(ch)
+		out.kd = kd
+	sent_ks = ks
+	var qj := JSON.stringify(qs)
+	if full or qj != sent_q:
+		out.q = qs
+		sent_q = qj
+	return out
 
 
 ## (player) Send my controls, show the host's race.
@@ -917,14 +949,31 @@ func _client_process(dt: float) -> void:
 		pad.item = latched.get("item", false)
 		pad.answer = latched.get("answer", -1)
 		latched = {}
-		Net.send(Game.host_peer, {"k": "in", "i": pad})
+		pad.stick = snappedf(pad.stick, 0.05)
+		pad.stick_y = snappedf(pad.stick_y, 0.05)
+		var pj := JSON.stringify(pad)
+		pad_quiet -= 1.0 / 30
+		if pj != sent_pad or pad_quiet <= 0:  # changed (or a reminder every second)
+			Net.send(Game.host_peer, {"k": "in", "i": pad})
+			sent_pad = pj
+			pad_quiet = 1.0
 	if snap_new:
 		snap_new = false
 		countdown = snap.cd
 		race_time = snap.t
-		for i in karts.size():
-			karts[i].apply(snap.ks[i])
-		var q: Dictionary = snap.q
+		if snap.has("ks"):
+			net_ks = snap.ks
+		elif snap.has("kd") and net_ks.size() == karts.size():
+			for i in net_ks.size():
+				var ch: Array = snap.kd[i]
+				for j in range(0, ch.size(), 2):
+					net_ks[i][int(ch[j])] = ch[j + 1]
+		if snap.has("q"):
+			net_q = snap.q
+		if net_ks.size() == karts.size():
+			for i in karts.size():
+				karts[i].apply(net_ks[i])
+		var q: Dictionary = net_q
 		if q.has(str(Game.my_kart)):
 			player.question = q[str(Game.my_kart)]
 		for i in boxes.size():
