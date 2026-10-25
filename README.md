@@ -14,7 +14,7 @@ content and rules, rebuilt for PCs and browsers.
 https://themisterdragon.github.io/hamlet-kart-remaster/
 
 **Download for Windows, Mac or Linux:**
-[Demo 0.3](https://github.com/themisterdragon/hamlet-kart-remaster/releases/tag/v0.3-demo)
+[Demo 0.4](https://github.com/themisterdragon/hamlet-kart-remaster/releases/tag/v0.4-demo)
 
 ### Class races
 Up to 8 students race each other from their own browsers. The teacher (or a
@@ -28,37 +28,37 @@ Class races are in the browser version; the downloads are for solo play.
 analytics, cookies or saved answers. See [PRIVACY.md](PRIVACY.md) for exactly
 what a class race connects to.
 
-### What's in demo 0.3
+### What's in demo 0.4
 - All 16 scenes, all 8 racers, all 160 questions, all 7 items
-- The racers as 3D clay figures, and sculpted clay scenery for every scene
-  (Elsinore, the chapel, the stage, the pirate ship, the graveyard and more)
-- A 3D character select with each racer's speed, pickup, handling and weight
-- Question boxes: a right answer is a boost and an item, three in a row a
-  long boost; a missed question comes back at your next box
-- Drifting with mini-turbos, slipstream, rocket starts, boost pads, ramps
-  and moving scenery, with sparks, flames and dust
-- The N64 edition's orchestral score, sound effects and character voices
-- Full controller support (Xbox and PlayStation, DualSense included) with
-  matching button names, rumble, and an on-screen keyboard for the class code
-- An automatic light mode for slower computers such as school Chromebooks
-
-New since demo 0.3 (in the code, not in a release yet):
+- **The cast, polished:** painted faces (eyes, brows, lashes, mouths), hair
+  with strands and a sheen, crisp clean edges where colours meet, polished
+  gold, silver and armour, Polonius' spectacles and the Ghost's glowing visor
+- **New scenery finish:** sharp cobbles, flagstones, planks, carpet, dirt and
+  sand; snow, grass or moving water around each track; a painted sky with
+  drifting clouds (stars and a moon at night); dressed stone on the castle,
+  towers and chapel; sculpted clay landmarks for every scene
 - **Build your kart** on character select: five bodies, three sets of
-  wheels, any racer's hood ornament, paint and trim. Every part trades one
-  stat for another, shown as you pick; each racer remembers their build
-  (on the computer, or in the browser's own storage) and it goes with you
-  into class races
-- Karts in parts: wheels roll and steer, the body rides on springs (nose up
-  under gas, rolls in bends, thumps on landing), the rider leans into turns;
-  far-off karts switch to light copies, about a third fewer triangles a frame
-- Smoother driving: the race runs at a fixed 60 steps a second on any screen,
-  keys ease the steering in, a drift press just before landing still counts,
-  softer barrier turns, a steadier camera that looks into bends
-- Moving obstacles that each move their own way (barrels roll, goblets and
-  skulls bounce, censers swing from a beam, ghosts drift, ships rock) and
-  wobble when brushed; piles of clutter that karts send flying
-- A Controls page on the title screen (controller and keyboard side by
-  side, in your controller's button names) and the controls on the pause screen
+  wheels, any racer's hood ornament, paint and trim, each part trading one
+  stat for another; each racer remembers their build
+- A studio-lit 3D character select, with portraits of the 3D cast
+- Karts in parts: wheels roll and steer, the body rides on springs, the
+  rider leans hard into a drift; rocket starts that squat, rev and launch
+- Smoother driving at a fixed 60 steps a second, a steadier camera, and a
+  flyover of each scene's landmarks before the race
+- Moving obstacles (barrels roll, censers swing, ghosts drift, ships rock)
+  and piles of clutter that karts send flying
+- Question boxes: a right answer is a boost and an item, three in a row a
+  long boost; a missed question comes back at your next box. Answer with
+  the D-pad, the arrow keys, a mouse click or a tap
+- Drifting with mini-turbos, slipstream, boost pads and ramps, with sparks,
+  flames and dust
+- The N64 edition's orchestral score, sound effects and character voices
+- Full controller support (Xbox and PlayStation, DualSense included, and
+  Android handhelds) with matching button names and rumble; phone and tablet
+  touch controls in the browser; a Controls page on the title screen
+- Class races that work on school networks (a relay when a direct link is
+  blocked) and use about a quarter of the data they did
+- An automatic light mode for slower computers such as school Chromebooks
 
 Coming next: split screen. See [docs/PLAN.md](docs/PLAN.md).
 

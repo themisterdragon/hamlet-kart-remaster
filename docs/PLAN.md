@@ -21,7 +21,7 @@ with Vulkan.
 - `tools/import_content.py`: N64 content → `data/content.json`, plus fonts and images.
 - Content autoload and a quiz test screen at 1080p.
 
-## Milestone 1: faithful port (done except split screen; demo 0.3)
+## Milestone 1: faithful port (done except split screen; demo 0.4)
 Same look as the N64 (kart sprites, the same tracks), at high resolution and 60 fps.
 
 Done so far (Act III's "To Be or Not to Be" by default; `-- --track=N` for others):
