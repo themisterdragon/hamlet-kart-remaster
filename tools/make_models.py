@@ -48,9 +48,10 @@ def mesh(scene, cell=None):
 
 
 def write_glb(path, nv, nt, verts, tris, uvm=None):
-    """uvm: per vertex (u, v, paint mask) for a painted face (tools/faces.py):
-    the mask goes in the colour's alpha, the place in TEXCOORD_0."""
-    pos, nrm, col, uv = bytearray(), bytearray(), bytearray(), bytearray()
+    """uvm: per vertex (u, v, kind, around, down) for a painted face
+    (tools/faces.py): the kind goes in the colour's alpha, the face place in
+    TEXCOORD_0, the hair's strand place in TEXCOORD_1."""
+    pos, nrm, col, uv, uv2 = bytearray(), bytearray(), bytearray(), bytearray(), bytearray()
     lo, hi = [1e9] * 3, [-1e9] * 3
     for i in range(nv):
         v = verts[10 * i: 10 * i + 10]
@@ -60,13 +61,14 @@ def write_glb(path, nv, nt, verts, tris, uvm=None):
         col += struct.pack("<4f", *v[6:9], uvm[i][2] if uvm else 1.0)
         if uvm:
             uv += struct.pack("<2f", uvm[i][0], uvm[i][1])
+            uv2 += struct.pack("<2f", uvm[i][3], uvm[i][4])
         lo = [min(a, b) for a, b in zip(lo, v[0:3])]
         hi = [max(a, b) for a, b in zip(hi, v[0:3])]
     # sdfmesh winds clockwise; glTF's front faces are counter-clockwise (else
     # the renderer culls the near side and the model looks see-through)
     ccw = [tris[3 * t + k] for t in range(nt) for k in (0, 2, 1)]
     idx = struct.pack("<%dI" % (3 * nt), *ccw)
-    blobs = [pos, nrm, col, idx] + ([uv] if uvm else [])
+    blobs = [pos, nrm, col, idx] + ([uv, uv2] if uvm else [])
     offsets, buf = [], bytearray()
     for b in blobs:
         offsets.append(len(buf))
@@ -96,6 +98,9 @@ def write_glb(path, nv, nt, verts, tris, uvm=None):
         gltf["meshes"][0]["primitives"][0]["attributes"]["TEXCOORD_0"] = 4
         gltf["bufferViews"].append({"buffer": 0, "byteOffset": offsets[4], "byteLength": len(uv), "target": 34962})
         gltf["accessors"].append({"bufferView": 4, "componentType": 5126, "count": nv, "type": "VEC2"})
+        gltf["meshes"][0]["primitives"][0]["attributes"]["TEXCOORD_1"] = 5
+        gltf["bufferViews"].append({"buffer": 0, "byteOffset": offsets[5], "byteLength": len(uv2), "target": 34962})
+        gltf["accessors"].append({"bufferView": 5, "componentType": 5126, "count": nv, "type": "VEC2"})
     js = json.dumps(gltf, separators=(",", ":")).encode()
     js += b" " * (-len(js) % 4)
     with open(path, "wb") as f:

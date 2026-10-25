@@ -215,7 +215,8 @@ func _characters(next: Callable) -> void:
 		var c: Dictionary = Content.characters[i]
 		var at := AtlasTexture.new()
 		at.atlas = sheet
-		at.region = Rect2(i * 48, 0, 48, 48)
+		var cell := sheet.get_height()  # (tools/make_portraits.py: one row of squares)
+		at.region = Rect2(i * cell, 0, cell, cell)
 		var b := _button(c.name, func(): _picked(i), grid)
 		b.icon = at
 		b.expand_icon = true
@@ -287,28 +288,7 @@ func _preview_panel() -> Control:
 	stage.add_child(vpc)
 	pv_root = Node3D.new()
 	vp.add_child(pv_root)
-	var env := Environment.new()
-	env.background_mode = Environment.BG_CLEAR_COLOR
-	# linear and a low, cool fill, as on the track: filmic and a strong grey
-	# fill washed the racers' colours out
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color("8c88a8")
-	env.ambient_light_energy = 0.32
-	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
-	var we := WorldEnvironment.new()
-	we.environment = env
-	pv_root.add_child(we)
-	var key := DirectionalLight3D.new()  # a warm key light and a cool rim, like a studio portrait
-	key.rotation_degrees = Vector3(-35, 30, 0)
-	key.light_color = Color("fff0d8")
-	key.light_energy = 0.95
-	key.shadow_enabled = true
-	pv_root.add_child(key)
-	var rim := DirectionalLight3D.new()
-	rim.rotation_degrees = Vector3(-20, 200, 0)
-	rim.light_color = Color("9ab8ff")
-	rim.light_energy = 0.55
-	pv_root.add_child(rim)
+	Studio.light(pv_root)
 	var podium := MeshInstance3D.new()  # a dark podium with a gold rim to turn on
 	var cyl := CylinderMesh.new()
 	cyl.top_radius = 34
@@ -316,7 +296,7 @@ func _preview_panel() -> Control:
 	cyl.height = 6
 	var pm := StandardMaterial3D.new()
 	pm.albedo_color = Color("2a2048")
-	pm.roughness = 0.35
+	pm.roughness = 0.7  # (smoother, it mirrors the studio sky and washes out)
 	cyl.material = pm
 	podium.mesh = cyl
 	podium.position.y = -3
@@ -335,10 +315,10 @@ func _preview_panel() -> Control:
 	ring.mesh = tor
 	pv_root.add_child(ring)
 	var cam := Camera3D.new()
-	cam.fov = 40
 	pv_root.add_child(cam)
-	var eye := Vector3(0, 46, 128)
-	cam.transform = Transform3D(Basis.looking_at(Vector3(0, 19, 0) - eye), eye)  # (not in the tree yet)
+	cam.fov = 34
+	var eye := Vector3(0, 37, 108)
+	cam.transform = Transform3D(Basis.looking_at(Vector3(0, 18.5, 0) - eye), eye)  # (not in the tree yet)
 	box.add_child(stage)
 	pv_name = _label_in(box, title_font, 58, UiKit.GOLD_PALE)
 	pv_name.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.55))
@@ -362,11 +342,16 @@ func _label_in(parent: Node, font: Font, size: int, color: Color) -> Label:
 	return l
 
 
+var pv_char := -1
+
+
 func _preview(ch: int, b: Dictionary = {}) -> void:
-	var angle := 0.0
+	var angle := 0.45  # a new racer turns up facing you, three-quarters on
 	if pv_model and is_instance_valid(pv_model):
-		angle = pv_model.rotation.y
+		if ch == pv_char:  # (the same racer's kart changing in the garage: keep turning)
+			angle = pv_model.rotation.y
 		pv_model.queue_free()
+	pv_char = ch
 	if b.is_empty():
 		b = KartBuild.saved(ch)
 	pv_model = KartRig.make(ch, b)
@@ -486,7 +471,9 @@ func _garage_show() -> void:
 func _process(delta: float) -> void:
 	clock += delta
 	if pv_model and is_instance_valid(pv_model):
-		pv_model.rotation.y += delta * 0.9
+		# a slow turn that lingers on the racer's face (a three-quarter view)
+		var front := 0.5 - 0.5 * cos(wrapf(pv_model.rotation.y - 0.45, -PI, PI))
+		pv_model.rotation.y += delta * lerpf(0.35, 1.3, front)
 	# the title art drifts, the logo floats and a light crosses it now and then
 	bg.pivot_offset = bg.size / 2
 	bg.scale = Vector2.ONE * (1.07 + 0.025 * sin(clock * 0.09))

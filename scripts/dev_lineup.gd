@@ -33,26 +33,7 @@ func _ready() -> void:
 		vp.msaa_3d = Viewport.MSAA_4X
 		vpc.add_child(vp)
 		grid.add_child(vpc)
-		var env := Environment.new()
-		env.background_mode = Environment.BG_CLEAR_COLOR
-		env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-		env.ambient_light_color = Color("8c88a8")
-		env.ambient_light_energy = 0.32
-		env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
-		var we := WorldEnvironment.new()
-		we.environment = env
-		vp.add_child(we)
-		var key := DirectionalLight3D.new()
-		key.rotation_degrees = Vector3(-35, 30, 0)
-		key.light_color = Color("fff0d8")
-		key.light_energy = 0.95
-		key.shadow_enabled = true
-		vp.add_child(key)
-		var rim := DirectionalLight3D.new()
-		rim.rotation_degrees = Vector3(-20, 200, 0)
-		rim.light_color = Color("9ab8ff")
-		rim.light_energy = 0.55
-		vp.add_child(rim)
+		Studio.light(vp)
 		var m := KartRig.make(ch, KartBuild.saved(ch))
 		m.rotation_degrees.y = yaw
 		vp.add_child(m)

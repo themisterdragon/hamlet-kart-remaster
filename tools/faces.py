@@ -21,8 +21,9 @@ SPAN = 1.2  # the texture covers +-SPAN head radii around the head's centre
 def capture(c, build):
     """Build a character with eyes() and mouth() recorded instead of sculpted.
     Returns (scene, face) where face is None if they have no painted face."""
-    real = c.head, c.eyes, c.mouth
+    real = c.head, c.eyes, c.mouth, c.lock
     face = {}
+    hair = set()
 
     def head(s, centre, r=10.5, skin=c.SKIN, chin=1.0):
         face.update(centre=s.t + s.m @ np.array(centre, float), m=s.m.copy(), r=r, skin=skin)
@@ -34,15 +35,51 @@ def capture(c, build):
     def mouth(s, centre, r=10.5, kind="smile", lip=c.LIPS):
         face["mouth"] = dict(kind=kind, lip=lip)
 
-    c.head, c.eyes, c.mouth = head, eyes, mouth
+    def lock(s, a, b, ra, rb, col, k=1.2):
+        hair.add(tuple(col))
+        real[3](s, a, b, ra, rb, col, k)
+
+    c.head, c.eyes, c.mouth, c.lock = head, eyes, mouth, lock
     try:
         s = c.Scene()
         build(s)
     finally:
-        c.head, c.eyes, c.mouth = real
+        c.head, c.eyes, c.mouth, c.lock = real
+    if "eyes" in face and face["eyes"].get("brow"):
+        hair.add(tuple(face["eyes"]["brow"]))  # (Polonius: white tufts and beard, like his brows)
+        # spectacles (rings in front of the eyes): the brows sit above the frames
+        specs(c, s, face)
+    face["hair"] = sorted(hair)
     if "eyes" not in face and build.__name__ == "ghost":
         return s, helm(c, s)
     return s, (face if "eyes" in face else None)
+
+
+def _renumber(s, keep):
+    """Keep only these primitives, with groups numbered again without gaps
+    (sdfmesh counts them in order)."""
+    ids = {g: i for i, g in enumerate(sorted({p["group"] for p in keep}))}
+    for p in keep:
+        p["group"] = ids[p["group"]]
+    s.prims = keep
+
+
+def specs(c, s, face):
+    """Spectacles (Polonius): rings in front of the eyes, and the bar between
+    them, are far thinner than a mesh can hold, so they're taken out and
+    painted (face["specs"]: each ring's centre and radius, the frame colour)."""
+    c0, r = face["centre"], face["r"]
+    rings = [p for p in s.prims if p["type"] == c.TORUS and np.linalg.norm(p["t"] - c0) < r * 1.15
+             and p["t"][2] - c0[2] > r * 0.8]
+    if not rings:
+        return
+    col = rings[0]["col"]
+    bars = [p for p in s.prims if p["type"] == c.CONE and tuple(p["col"]) == tuple(col)
+            and np.linalg.norm(p["t"] - c0) < r * 1.15 and p["t"][2] - c0[2] > r * 0.8]
+    face["specs"] = dict(rings=[(p["t"][0] - c0[0], p["t"][1] - c0[1], p["p"][0], p["p"][1]) for p in rings],
+                         col=tuple(col))
+    gone = {id(p) for p in rings + bars}
+    _renumber(s, [p for p in s.prims if id(p) not in gone])
 
 
 def helm(c, s):
@@ -66,32 +103,43 @@ def helm(c, s):
             feats["glow"] = p["col"]
         else:
             keep.append(p)
-    # groups numbered again without gaps (sdfmesh counts them in order)
-    ids = {g: i for i, g in enumerate(sorted({p["group"] for p in keep}))}
-    for p in keep:
-        p["group"] = ids[p["group"]]
-    s.prims = keep
+    _renumber(s, keep)
     return dict(centre=centre, m=np.eye(3), r=shell["p"][0], skin=shell["col"], kind="helm", **feats)
 
 
 def uv_mask(face, verts, nv):
     """Per vertex: (u, v) on the face texture (a projection from the front of
-    the head) and 1 where the paint may go (bare skin, on the face's side of
-    the head), else 0."""
+    the head); what it is, in the colour's alpha (1 = bare skin the face
+    paint may go on, on the face's side of the head; HAIR = hair; else the
+    sculpt's shine (0..1) times SHINE);
+    and (around, down) on the head for the hair's strands (Cast.face())."""
     out = []
     if face is None:
-        return [(0.0, 0.0, 0.0)] * nv
+        return [(0.0, 0.0, SHINE * verts[10 * i + 9], 0.0, 0.0) for i in range(nv)]
     c, m, r = face["centre"], face["m"], face["r"]
     skin = np.array(face["skin"], float) / 255
+    hair = [np.array(h, float) / 255 for h in face.get("hair", [])]
     for i in range(nv):
         v = verts[10 * i: 10 * i + 10]
         p = m.T @ (np.array(v[0:3]) - c)  # in the head's own frame
+        col = np.array(v[6:9])
         u = 0.5 + p[0] / (2 * SPAN * r)
         w = 0.5 - p[1] / (2 * SPAN * r)
-        bare = np.linalg.norm(np.array(v[6:9]) - skin) < 0.1
-        ok = bare and p[2] > 0 and np.linalg.norm(p) < 1.3 * r
-        out.append((u, w, 1.0 if ok else 0.0))
+        bare = np.linalg.norm(col - skin) < 0.1
+        kind = 1.0 if bare and p[2] > 0 and np.linalg.norm(p) < 1.3 * r else 0.0
+        if kind == 0 and np.linalg.norm(p) < 2.0 * r and any(np.linalg.norm(col - h) < 0.05 for h in hair):
+            kind = HAIR
+        elif kind == 0:
+            kind = SHINE * v[9]  # the rest: how shiny the sculpt made it (gold, armour)
+        # strands run down from the crown: across them is the angle round the
+        # head (0 at the back, where a race shows it most), along is height
+        around = math.atan2(p[0], -p[2]) * r
+        out.append((u, w, kind, around, p[1]))
     return out
+
+
+HAIR = 0.25
+SHINE = 0.12  # (kept well clear of HAIR)
 
 
 def _shade(col, k):
@@ -197,8 +245,8 @@ def paint(face):
         brow = e.get("brow")
         if brow:
             tilt = math.radians(e.get("tilt", 0.0))
-            by = ey + r * 0.46
-            L = r * 0.2
+            by = ey + r * (0.52 if face.get("specs") else 0.46)
+            L = r * (0.23 if face.get("specs") else 0.2)
             pts = []
             for t in np.linspace(-1, 1, 7):
                 lx, ly = t * L, -0.25 * L * t * t + 0.06 * L  # a gentle arch
@@ -207,7 +255,32 @@ def paint(face):
             if x < 0:
                 pts = pts[::-1]  # thick at the inner end, thin at the outer
             brow_c = tuple(brow) + (255,)
-            tapered(pts, r * 0.12, r * 0.05, brow_c)
+            bw = r * (0.15 if face.get("specs") else 0.12)
+            if sum(brow) > 3 * 200:  # white brows: a soft edge so they show on pale skin
+                tapered([(q[0], q[1] - r * 0.012) for q in pts], bw + r * 0.03, r * 0.08, _shade(skin, 0.78) + (255,))
+            tapered(pts, bw, r * 0.05, brow_c)
+    sp = face.get("specs")
+    if sp:
+        # the glass: a faint cool tint and a glint, then the frames (a shadow
+        # first, so they stand off the face), the bridge, a highlight on top
+        gold = tuple(sp["col"])
+        lite = _shade(gold, 1.45)
+        glass = Image.new("RGBA", img.size, (0, 0, 0, 0))
+        gd = ImageDraw.Draw(glass)
+        for x, y, R, t in sp["rings"]:
+            gd.ellipse([P(x - R, y + R), P(x + R, y - R)], fill=(220, 236, 255, 34))
+            gd.polygon([P(x - R * 0.55, y + R * 0.15), P(x - R * 0.15, y + R * 0.6), P(x + R * 0.05, y + R * 0.4), P(x - R * 0.4, y - 0.05)],
+                       fill=(255, 255, 255, 90))
+        img.alpha_composite(glass)
+        d = ImageDraw.Draw(img)
+        w = 0.42
+        for x, y, R, t in sp["rings"]:
+            d.ellipse([P(x - R, y + R - 0.25), P(x + R, y - R - 0.25)], outline=_shade(skin, 0.72) + (150,), width=int(w * unit))
+        (x0, y0, R0, _), (x1, y1, R1, _) = sorted(sp["rings"])[:2]
+        curve([(x0 + R0 * 0.9, y0 + R0 * 0.25), ((x0 + x1) / 2, (y0 + y1) / 2 + R0 * 0.42), (x1 - R1 * 0.9, y1 + R1 * 0.25)], w * 0.9, gold + (255,))
+        for x, y, R, t in sp["rings"]:
+            d.ellipse([P(x - R, y + R), P(x + R, y - R)], outline=gold + (255,), width=int(w * unit))
+            d.arc([P(x - R + w * 0.25, y + R - w * 0.25), P(x + R - w * 0.25, y - R + w * 0.25)], 200, 290, fill=lite + (255,), width=max(1, int(w * 0.35 * unit)))
     # the mouth
     mo = face.get("mouth") or {"kind": "smile", "lip": (0x8E, 0x3A, 0x3A)}
     lip = tuple(mo["lip"])
