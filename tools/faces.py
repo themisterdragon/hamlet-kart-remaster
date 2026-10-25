@@ -40,7 +40,38 @@ def capture(c, build):
         build(s)
     finally:
         c.head, c.eyes, c.mouth = real
+    if "eyes" not in face and build.__name__ == "ghost":
+        return s, helm(c, s)
     return s, (face if "eyes" in face else None)
+
+
+def helm(c, s):
+    """The Ghost's closed helm: its visor slit, breathing slits and glowing
+    eyes are cut and set into the sculpt far smaller than a mesh can hold, so
+    they're taken out and painted on the helm instead (paint(): kind "helm")."""
+    slot = (0x10, 0x20, 0x2A)
+    shell = next(p for p in s.prims if p["type"] == c.SPHERE and p["p"][0] > 11)  # the great helm
+    centre = shell["t"] - np.array([0, 0.5, 0])  # the head's place (H)
+    feats = dict(visor=None, breaths=[], eyes=[])
+    keep = []
+    for p in s.prims:
+        q = p["t"] - centre
+        if p["sub"] and tuple(p["col"]) == slot:
+            if p["p"][0] > 3:
+                feats["visor"] = (q[0], q[1], p["p"][0], p["p"][1])
+            else:
+                feats["breaths"].append((q[0], q[1], p["p"][0], p["p"][1]))
+        elif p["emit"] >= 1.0 and np.linalg.norm(q) < 12:
+            feats["eyes"].append((q[0], q[1], p["p"][0], p["p"][1]))
+            feats["glow"] = p["col"]
+        else:
+            keep.append(p)
+    # groups numbered again without gaps (sdfmesh counts them in order)
+    ids = {g: i for i, g in enumerate(sorted({p["group"] for p in keep}))}
+    for p in keep:
+        p["group"] = ids[p["group"]]
+    s.prims = keep
+    return dict(centre=centre, m=np.eye(3), r=shell["p"][0], skin=shell["col"], kind="helm", **feats)
 
 
 def uv_mask(face, verts, nv):
@@ -76,6 +107,8 @@ def paint(face):
     skin = tuple(face["skin"])
     e = face["eyes"]
     unit = big / (2 * SPAN * r)  # pixels per world unit
+    if face.get("kind") == "helm":
+        return _paint_helm(face, img, d, unit, big)
 
     def P(x, y):  # head units (x right, y up, centre 0) to pixels
         return (big / 2 + x * unit, big / 2 - y * unit)
@@ -194,4 +227,46 @@ def paint(face):
         ellipse(0, my - r * 0.01, r * 0.05, r * 0.07, (60, 24, 30, 255))
     elif kind == "flat":
         curve([(-r * 0.15, my + r * 0.005), (0, my - r * 0.01), (r * 0.15, my - r * 0.02)], r * 0.045, dark)
+    return img.resize((SIZE, SIZE), Image.LANCZOS)
+
+
+def _paint_helm(face, img, d, unit, big):
+    """The Ghost's visor: a dark slit with a bevelled rim and two glowing eyes
+    behind it, five breathing slits below. The eyes and their halo are the
+    only bright greens, which Cast.face() makes glow."""
+    def P(x, y):
+        return (big / 2 + x * unit, big / 2 - y * unit)
+
+    def slot(x, y, hx, hy, fill, rim):
+        rr = min(hx, hy) * unit
+        d.rounded_rectangle([P(x - hx - 0.25, y + hy + 0.25), P(x + hx + 0.25, y - hy - 0.25)], radius=rr + 0.25 * unit, fill=rim)
+        d.rounded_rectangle([P(x - hx, y + hy), P(x + hx, y - hy)], radius=rr, fill=fill)
+        # a soft inner shadow along the top edge
+        d.rounded_rectangle([P(x - hx, y + hy), P(x + hx, y + hy * 0.35)], radius=rr, fill=(4, 10, 16, 255))
+
+    rim = (0x5E, 0x86, 0x9A, 255)
+    dark = (0x10, 0x20, 0x2A, 255)
+    if face["visor"]:
+        slot(*face["visor"], dark, rim)
+    for b in face["breaths"]:
+        slot(*b, dark, rim)
+    glow = tuple(face.get("glow", (0x70, 0xFF, 0xD0)))
+    halo = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    hd = ImageDraw.Draw(halo)
+    for x, y, rx, ry in face["eyes"]:
+        for k, a in ((2.2, 70), (1.6, 120)):
+            hd.ellipse([P(x - rx * k, y + ry * k), P(x + rx * k, y - ry * k)], fill=glow + (a,))
+    from PIL import ImageFilter
+    halo = halo.filter(ImageFilter.GaussianBlur(unit * 0.5))
+    # the halo lights the slit only (it's behind the visor)
+    vis = Image.new("L", img.size, 0)
+    if face["visor"]:
+        x, y, hx, hy = face["visor"]
+        ImageDraw.Draw(vis).rounded_rectangle([P(x - hx, y + hy), P(x + hx, y - hy)], radius=min(hx, hy) * unit, fill=255)
+    halo.putalpha(Image.fromarray((np.asarray(halo.getchannel("A"), float) * np.asarray(vis, float) / 255).astype(np.uint8)))
+    img.alpha_composite(halo)
+    d = ImageDraw.Draw(img)
+    for x, y, rx, ry in face["eyes"]:
+        d.ellipse([P(x - rx, y + ry), P(x + rx, y - ry)], fill=glow + (255,))
+        d.ellipse([P(x - rx * 0.55, y + ry * 0.5), P(x + rx * 0.55, y - ry * 0.5)], fill=(235, 255, 248, 255))
     return img.resize((SIZE, SIZE), Image.LANCZOS)

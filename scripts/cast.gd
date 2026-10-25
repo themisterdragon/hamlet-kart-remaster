@@ -55,6 +55,7 @@ static func face(ch: int) -> Material:
 shader_type spatial;
 render_mode specular_schlick_ggx;
 uniform sampler2D face : source_color, filter_linear_mipmap_anisotropic, repeat_disable;
+uniform float glow = 0.0;
 void fragment() {
 	// the sculpt's colours are sRGB, as in Cast.clay() (Godot's own rule:
 	// converted only where the renderer works in linear light)
@@ -66,6 +67,8 @@ void fragment() {
 	float a = f.a * smoothstep(0.45, 0.55, COLOR.a);
 	ALBEDO = mix(base, f.rgb, a);
 	ROUGHNESS = mix(0.6, 0.3, a);  // eyes catch the light
+	// the Ghost's eyes glow: only its paint has bright greens like theirs
+	EMISSION = f.rgb * a * glow * smoothstep(0.75, 0.95, f.g) * 1.6;
 	RIM = 0.08;
 	RIM_TINT = 0.3;
 }
@@ -73,5 +76,6 @@ void fragment() {
 		var m := ShaderMaterial.new()
 		m.shader = _face_shader
 		m.set_shader_parameter("face", load(path))
+		m.set_shader_parameter("glow", 1.0 if ch == 7 else 0.0)  # the Ghost
 		_faces[ch] = m
 	return _faces[ch]
